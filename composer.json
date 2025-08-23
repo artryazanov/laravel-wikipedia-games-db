@@ -1,0 +1,38 @@
+{
+  "name": "artryazanov/laravel-wikipedia-games-db",
+  "description": "A Laravel package to build a video game database by scraping English Wikipedia.",
+  "type": "laravel-package",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Artryazanov"
+    }
+  ],
+  "require": {
+    "php": "^8.1",
+    "illuminate/support": "^10.0|^11.0|^12.0",
+    "illuminate/http": "^10.0|^11.0|^12.0",
+    "illuminate/database": "^10.0|^11.0|^12.0",
+    "illuminate/console": "^10.0|^11.0|^12.0",
+    "illuminate/queue": "^10.0|^11.0|^12.0",
+    "symfony/dom-crawler": "^6.0|^7.0",
+    "symfony/css-selector": "^6.0|^7.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Artryazanov\\WikipediaGamesDb\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Artryazanov\\WikipediaGamesDb\\WikipediaGamesDbServiceProvider"
+      ]
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}
