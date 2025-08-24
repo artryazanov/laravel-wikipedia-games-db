@@ -157,7 +157,7 @@ class ProcessGamePageJob implements ShouldQueue
     {
         $ids = [];
         foreach ($names as $name) {
-            $slug = Str::slug($name);
+            $slug = $this->makeSlug($name, 255);
             /** @var \Illuminate\Database\Eloquent\Model $model */
             $model = $modelClass::firstOrCreate(
                 ['slug' => $slug],
@@ -167,6 +167,28 @@ class ProcessGamePageJob implements ShouldQueue
         }
 
         return $ids;
+    }
+
+    private function makeSlug(string $name, int $maxLen = 255): string
+    {
+        $slug = Str::slug($name);
+        if ($slug === '') {
+            $hash = substr(sha1($name), 0, 12);
+            $fallback = 'n-a-'.$hash;
+            return substr($fallback, 0, $maxLen);
+        }
+        if (strlen($slug) <= $maxLen) {
+            return $slug;
+        }
+        $hash = substr(sha1($name), 0, 8);
+        $suffix = '-'.$hash;
+        $baseLen = $maxLen - strlen($suffix);
+        if ($baseLen < 1) {
+            return substr($slug, 0, $maxLen);
+        }
+        $base = substr($slug, 0, $baseLen);
+        $base = rtrim($base, '-');
+        return $base.$suffix;
     }
 
     private function makeCleanTitle(string $title): string
