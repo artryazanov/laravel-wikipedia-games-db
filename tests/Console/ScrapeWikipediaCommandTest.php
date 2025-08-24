@@ -2,10 +2,10 @@
 
 namespace Tests\Console;
 
-use Tests\TestCase;
+use Artryazanov\WikipediaGamesDb\Jobs\ProcessCategoryJob;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
-use Artryazanov\WikipediaGamesDb\Jobs\ProcessCategoryJob;
+use Tests\TestCase;
 
 class ScrapeWikipediaCommandTest extends TestCase
 {
@@ -21,8 +21,8 @@ class ScrapeWikipediaCommandTest extends TestCase
         $category = 'Category:My Custom Games';
 
         $this->artisan('games:scrape-wikipedia', [
-                '--category' => $category,
-            ])
+            '--category' => $category,
+        ])
             ->assertSuccessful();
 
         Bus::assertDispatched(ProcessCategoryJob::class, function (ProcessCategoryJob $job) use ($category) {

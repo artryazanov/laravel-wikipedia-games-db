@@ -2,12 +2,12 @@
 
 namespace Tests\Jobs;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Artryazanov\WikipediaGamesDb\Jobs\ProcessGamePageJob;
-use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
-use Artryazanov\WikipediaGamesDb\Services\InfoboxParser;
 use Artryazanov\WikipediaGamesDb\Models\Game;
+use Artryazanov\WikipediaGamesDb\Services\InfoboxParser;
+use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class ProcessGamePageJobTest extends TestCase
 {

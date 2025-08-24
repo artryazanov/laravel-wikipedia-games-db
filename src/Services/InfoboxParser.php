@@ -77,7 +77,7 @@ class InfoboxParser
                         if ($img->count() > 0) {
                             $src = $img->attr('src');
                             if ($src && str_starts_with($src, '//')) {
-                                $src = 'https:' . $src;
+                                $src = 'https:'.$src;
                             }
                             $data['cover_image_url'] = $src;
                         }
@@ -89,12 +89,12 @@ class InfoboxParser
         });
 
         // Some pages place the image in a generic image cell; attempt general image fallback
-        if (!isset($data['cover_image_url'])) {
+        if (! isset($data['cover_image_url'])) {
             $imageNode = $infobox->filter('td a.image img')->first();
             if ($imageNode->count() > 0) {
                 $src = $imageNode->attr('src');
                 if ($src && str_starts_with($src, '//')) {
-                    $src = 'https:' . $src;
+                    $src = 'https:'.$src;
                 }
                 $data['cover_image_url'] = $src;
             }
@@ -181,6 +181,7 @@ class InfoboxParser
                 $items[] = $text;
             }
         });
+
         return array_values(array_unique($items));
     }
 
@@ -220,6 +221,7 @@ class InfoboxParser
     private function cleanText(string $text): string
     {
         $text = preg_replace('/\[\d+\]/u', '', $text) ?? $text;
+
         return trim($text);
     }
 }

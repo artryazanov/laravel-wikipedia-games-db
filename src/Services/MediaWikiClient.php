@@ -48,6 +48,7 @@ class MediaWikiClient
                 'status' => $response->status(),
                 'body' => $response->body(),
             ]);
+
             return null;
         }
 
@@ -87,6 +88,7 @@ class MediaWikiClient
                 'status' => $response->status(),
                 'body' => $response->body(),
             ]);
+
             return null;
         }
 
@@ -96,6 +98,7 @@ class MediaWikiClient
             // MediaWiki returns an object with "*" key for HTML string
             return $text['*'] ?? null;
         }
+
         return is_string($text) ? $text : null;
     }
 
@@ -107,7 +110,7 @@ class MediaWikiClient
     {
         // Try REST summary first
         $origin = $this->wikiOrigin();
-        $restUrl = rtrim($origin, '/') . '/api/rest_v1/page/summary/' . rawurlencode($pageTitle);
+        $restUrl = rtrim($origin, '/').'/api/rest_v1/page/summary/'.rawurlencode($pageTitle);
 
         $restResp = Http::withHeaders(['User-Agent' => $this->userAgent])
             ->acceptJson()
@@ -137,11 +140,12 @@ class MediaWikiClient
                 'status' => $piResp->status(),
                 'body' => $piResp->body(),
             ]);
+
             return null;
         }
         $data = $piResp->json();
         $pages = Arr::get($data, 'query.pages', []);
-        if (is_array($pages) && !empty($pages)) {
+        if (is_array($pages) && ! empty($pages)) {
             $first = reset($pages);
             $url = $first['original']['source'] ?? ($first['thumbnail']['source'] ?? null);
             if (is_string($url) && $url !== '') {
@@ -161,8 +165,9 @@ class MediaWikiClient
         $parts = parse_url($this->apiEndpoint);
         $scheme = $parts['scheme'] ?? 'https';
         $host = $parts['host'] ?? 'en.wikipedia.org';
-        $port = isset($parts['port']) ? ':' . $parts['port'] : '';
-        return $scheme . '://' . $host . $port;
+        $port = isset($parts['port']) ? ':'.$parts['port'] : '';
+
+        return $scheme.'://'.$host.$port;
     }
 
     /**
@@ -173,7 +178,7 @@ class MediaWikiClient
     {
         // Prefer REST summary extract (plain text)
         $origin = $this->wikiOrigin();
-        $restUrl = rtrim($origin, '/') . '/api/rest_v1/page/summary/' . rawurlencode($pageTitle);
+        $restUrl = rtrim($origin, '/').'/api/rest_v1/page/summary/'.rawurlencode($pageTitle);
 
         $restResp = Http::withHeaders(['User-Agent' => $this->userAgent])
             ->acceptJson()
@@ -203,17 +208,19 @@ class MediaWikiClient
                 'status' => $resp->status(),
                 'body' => $resp->body(),
             ]);
+
             return null;
         }
         $data = $resp->json();
         $pages = Arr::get($data, 'query.pages', []);
-        if (is_array($pages) && !empty($pages)) {
+        if (is_array($pages) && ! empty($pages)) {
             $first = reset($pages);
             $extract = $first['extract'] ?? null;
             if (is_string($extract) && $extract !== '') {
                 return $extract;
             }
         }
+
         return null;
     }
 
@@ -240,18 +247,20 @@ class MediaWikiClient
                 'status' => $resp->status(),
                 'body' => $resp->body(),
             ]);
+
             return null;
         }
 
         $json = $resp->json();
         $pages = Arr::get($json, 'query.pages', []);
-        if (is_array($pages) && !empty($pages)) {
+        if (is_array($pages) && ! empty($pages)) {
             $first = reset($pages);
             $content = Arr::get($first, 'revisions.0.slots.main.content');
             if (is_string($content) && $content !== '') {
                 return $content;
             }
         }
+
         return null;
     }
 }

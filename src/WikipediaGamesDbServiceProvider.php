@@ -2,10 +2,10 @@
 
 namespace Artryazanov\WikipediaGamesDb;
 
-use Illuminate\Support\ServiceProvider;
 use Artryazanov\WikipediaGamesDb\Console\ScrapeWikipediaCommand;
 use Artryazanov\WikipediaGamesDb\Services\InfoboxParser;
 use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
+use Illuminate\Support\ServiceProvider;
 
 class WikipediaGamesDbServiceProvider extends ServiceProvider
 {
@@ -15,7 +15,7 @@ class WikipediaGamesDbServiceProvider extends ServiceProvider
     public function register(): void
     {
         // Merge package configuration
-        $this->mergeConfigFrom(__DIR__ . '/../config/game-scraper.php', 'game-scraper');
+        $this->mergeConfigFrom(__DIR__.'/../config/game-scraper.php', 'game-scraper');
 
         // Bind MediaWikiClient as a singleton
         $this->app->singleton(MediaWikiClient::class, function ($app) {
@@ -27,7 +27,7 @@ class WikipediaGamesDbServiceProvider extends ServiceProvider
 
         // Bind InfoboxParser as a singleton
         $this->app->singleton(InfoboxParser::class, function () {
-            return new InfoboxParser();
+            return new InfoboxParser;
         });
     }
 
@@ -44,15 +44,15 @@ class WikipediaGamesDbServiceProvider extends ServiceProvider
         }
 
         // Load package migrations
-        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
 
         // Publish configuration and migrations
         $this->publishes([
-            __DIR__ . '/../config/game-scraper.php' => config_path('game-scraper.php'),
+            __DIR__.'/../config/game-scraper.php' => config_path('game-scraper.php'),
         ], 'config');
 
         $this->publishes([
-            __DIR__ . '/../database/migrations' => database_path('migrations'),
+            __DIR__.'/../database/migrations' => database_path('migrations'),
         ], 'migrations');
     }
 }

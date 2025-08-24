@@ -17,7 +17,7 @@ return new class extends Migration
     public function up(): void
     {
         // Core games table
-        if (!Schema::hasTable('wikipedia_games')) {
+        if (! Schema::hasTable('wikipedia_games')) {
             Schema::create('wikipedia_games', function (Blueprint $table) {
                 $table->id()->comment('Primary key. Unique identifier of the game.');
                 $table->string('title')->unique()->comment('Unique game title as appears on Wikipedia.');
@@ -35,7 +35,7 @@ return new class extends Migration
         }
 
         // Taxonomy tables
-        if (!Schema::hasTable('wikipedia_game_genres')) {
+        if (! Schema::hasTable('wikipedia_game_genres')) {
             Schema::create('wikipedia_game_genres', function (Blueprint $table) {
                 $table->id()->comment('Primary key. Unique identifier of the genre.');
                 $table->string('name')->unique()->comment('Unique human-readable name of the genre (e.g., RPG).');
@@ -46,7 +46,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('wikipedia_game_platforms')) {
+        if (! Schema::hasTable('wikipedia_game_platforms')) {
             Schema::create('wikipedia_game_platforms', function (Blueprint $table) {
                 $table->id()->comment('Primary key. Unique identifier of the platform.');
                 $table->string('name')->unique()->comment('Unique human-readable platform name (e.g., Windows, PlayStation 5).');
@@ -57,7 +57,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('wikipedia_game_companies')) {
+        if (! Schema::hasTable('wikipedia_game_companies')) {
             Schema::create('wikipedia_game_companies', function (Blueprint $table) {
                 $table->id()->comment('Primary key. Unique identifier of the company.');
                 $table->string('name')->unique()->comment('Unique human-readable company name (e.g., Ubisoft).');
@@ -69,7 +69,7 @@ return new class extends Migration
         }
 
         // Modes taxonomy
-        if (!Schema::hasTable('wikipedia_game_modes')) {
+        if (! Schema::hasTable('wikipedia_game_modes')) {
             Schema::create('wikipedia_game_modes', function (Blueprint $table) {
                 $table->id()->comment('Primary key. Unique identifier of the game mode.');
                 $table->string('name')->unique()->comment('Unique human-readable mode name (e.g., Single-player, Multiplayer).');
@@ -81,7 +81,7 @@ return new class extends Migration
         }
 
         // Series taxonomy
-        if (!Schema::hasTable('wikipedia_game_series')) {
+        if (! Schema::hasTable('wikipedia_game_series')) {
             Schema::create('wikipedia_game_series', function (Blueprint $table) {
                 $table->id()->comment('Primary key. Unique identifier of the game series.');
                 $table->string('name')->unique()->comment('Unique human-readable series name (e.g., The Legend of Zelda).');
@@ -93,7 +93,7 @@ return new class extends Migration
         }
 
         // Engines taxonomy
-        if (!Schema::hasTable('wikipedia_game_engines')) {
+        if (! Schema::hasTable('wikipedia_game_engines')) {
             Schema::create('wikipedia_game_engines', function (Blueprint $table) {
                 $table->id()->comment('Primary key. Unique identifier of the game engine.');
                 $table->string('name')->unique()->comment('Unique human-readable engine name (e.g., Unreal Engine 5).');
@@ -105,7 +105,7 @@ return new class extends Migration
         }
 
         // Pivot tables
-        if (!Schema::hasTable('wikipedia_game_game_genre')) {
+        if (! Schema::hasTable('wikipedia_game_game_genre')) {
             Schema::create('wikipedia_game_game_genre', function (Blueprint $table) {
                 $table->foreignId('game_id')->comment('Foreign key referencing wikipedia_games.id')->constrained('wikipedia_games')->onDelete('cascade');
                 $table->foreignId('genre_id')->comment('Foreign key referencing wikipedia_game_genres.id')->constrained('wikipedia_game_genres')->onDelete('cascade');
@@ -114,7 +114,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('wikipedia_game_game_platform')) {
+        if (! Schema::hasTable('wikipedia_game_game_platform')) {
             Schema::create('wikipedia_game_game_platform', function (Blueprint $table) {
                 $table->foreignId('game_id')->comment('Foreign key referencing wikipedia_games.id')->constrained('wikipedia_games')->onDelete('cascade');
                 $table->foreignId('platform_id')->comment('Foreign key referencing wikipedia_game_platforms.id')->constrained('wikipedia_game_platforms')->onDelete('cascade');
@@ -123,7 +123,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('wikipedia_game_game_mode')) {
+        if (! Schema::hasTable('wikipedia_game_game_mode')) {
             Schema::create('wikipedia_game_game_mode', function (Blueprint $table) {
                 $table->foreignId('game_id')->comment('Foreign key referencing wikipedia_games.id')->constrained('wikipedia_games')->onDelete('cascade');
                 $table->foreignId('mode_id')->comment('Foreign key referencing wikipedia_game_modes.id')->constrained('wikipedia_game_modes')->onDelete('cascade');
@@ -132,7 +132,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('wikipedia_game_game_series')) {
+        if (! Schema::hasTable('wikipedia_game_game_series')) {
             Schema::create('wikipedia_game_game_series', function (Blueprint $table) {
                 $table->foreignId('game_id')->comment('Foreign key referencing wikipedia_games.id')->constrained('wikipedia_games')->onDelete('cascade');
                 $table->foreignId('series_id')->comment('Foreign key referencing wikipedia_game_series.id')->constrained('wikipedia_game_series')->onDelete('cascade');
@@ -141,7 +141,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('wikipedia_game_game_engine')) {
+        if (! Schema::hasTable('wikipedia_game_game_engine')) {
             Schema::create('wikipedia_game_game_engine', function (Blueprint $table) {
                 $table->foreignId('game_id')->comment('Foreign key referencing wikipedia_games.id')->constrained('wikipedia_games')->onDelete('cascade');
                 $table->foreignId('engine_id')->comment('Foreign key referencing wikipedia_game_engines.id')->constrained('wikipedia_game_engines')->onDelete('cascade');
@@ -150,7 +150,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('wikipedia_game_game_company')) {
+        if (! Schema::hasTable('wikipedia_game_game_company')) {
             Schema::create('wikipedia_game_game_company', function (Blueprint $table) {
                 $table->foreignId('game_id')->comment('Foreign key referencing wikipedia_games.id')->constrained('wikipedia_games')->onDelete('cascade');
                 $table->foreignId('company_id')->comment('Foreign key referencing wikipedia_game_companies.id')->constrained('wikipedia_game_companies')->onDelete('cascade');

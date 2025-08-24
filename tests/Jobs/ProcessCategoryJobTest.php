@@ -2,11 +2,11 @@
 
 namespace Tests\Jobs;
 
-use Tests\TestCase;
-use Illuminate\Support\Facades\Bus;
 use Artryazanov\WikipediaGamesDb\Jobs\ProcessCategoryJob;
 use Artryazanov\WikipediaGamesDb\Jobs\ProcessGamePageJob;
 use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
+use Illuminate\Support\Facades\Bus;
+use Tests\TestCase;
 
 class ProcessCategoryJobTest extends TestCase
 {

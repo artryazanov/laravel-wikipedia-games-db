@@ -2,6 +2,15 @@
 
 namespace Artryazanov\WikipediaGamesDb\Jobs;
 
+use Artryazanov\WikipediaGamesDb\Models\Company;
+use Artryazanov\WikipediaGamesDb\Models\Engine;
+use Artryazanov\WikipediaGamesDb\Models\Game;
+use Artryazanov\WikipediaGamesDb\Models\Genre;
+use Artryazanov\WikipediaGamesDb\Models\Mode;
+use Artryazanov\WikipediaGamesDb\Models\Platform;
+use Artryazanov\WikipediaGamesDb\Models\Series;
+use Artryazanov\WikipediaGamesDb\Services\InfoboxParser;
+use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -11,15 +20,6 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Artryazanov\WikipediaGamesDb\Models\Company;
-use Artryazanov\WikipediaGamesDb\Models\Game;
-use Artryazanov\WikipediaGamesDb\Models\Genre;
-use Artryazanov\WikipediaGamesDb\Models\Platform;
-use Artryazanov\WikipediaGamesDb\Models\Mode;
-use Artryazanov\WikipediaGamesDb\Models\Series;
-use Artryazanov\WikipediaGamesDb\Models\Engine;
-use Artryazanov\WikipediaGamesDb\Services\InfoboxParser;
-use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
 use Throwable;
 
 /**
@@ -44,7 +44,6 @@ class ProcessGamePageJob implements ShouldQueue
     {
         Log::info('Processing game page', ['title' => $this->pageTitle]);
 
-
         // Throttle
         $delayMs = (int) config('game-scraper.throttle_milliseconds', 1000);
         if ($delayMs > 0) {
@@ -52,14 +51,16 @@ class ProcessGamePageJob implements ShouldQueue
         }
 
         $html = $client->getPageHtml($this->pageTitle);
-        if (!$html) {
+        if (! $html) {
             $this->fail(new \RuntimeException("Failed to fetch HTML for page: {$this->pageTitle}"));
+
             return;
         }
 
         $data = $parser->parse($html);
         if (empty($data)) {
             Log::warning('No infobox data found for page', ['title' => $this->pageTitle]);
+
             return;
         }
 
@@ -78,7 +79,7 @@ class ProcessGamePageJob implements ShouldQueue
 
         DB::transaction(function () use ($data, $leadDescription, $cleanTitle, $wikitext, $releaseYear) {
             // Build wikipedia_url from title
-            $wikipediaUrl = 'https://en.wikipedia.org/wiki/' . str_replace(' ', '_', $this->pageTitle);
+            $wikipediaUrl = 'https://en.wikipedia.org/wiki/'.str_replace(' ', '_', $this->pageTitle);
 
             // Upsert game by title
             $game = Game::where('title', $this->pageTitle)->first();
@@ -101,45 +102,45 @@ class ProcessGamePageJob implements ShouldQueue
             }
 
             // Sync relations
-            if (!empty($data['genres']) && is_array($data['genres'])) {
+            if (! empty($data['genres']) && is_array($data['genres'])) {
                 $genreIds = $this->getIdsFor(Genre::class, $data['genres']);
                 $game->genres()->sync($genreIds);
             }
 
-            if (!empty($data['platforms']) && is_array($data['platforms'])) {
+            if (! empty($data['platforms']) && is_array($data['platforms'])) {
                 $platformIds = $this->getIdsFor(Platform::class, $data['platforms']);
                 $game->platforms()->sync($platformIds);
             }
 
-            if (!empty($data['modes']) && is_array($data['modes'])) {
+            if (! empty($data['modes']) && is_array($data['modes'])) {
                 $modeIds = $this->getIdsFor(Mode::class, $data['modes']);
                 $game->modes()->sync($modeIds);
             }
 
-            if (!empty($data['series']) && is_array($data['series'])) {
+            if (! empty($data['series']) && is_array($data['series'])) {
                 $seriesIds = $this->getIdsFor(Series::class, $data['series']);
                 $game->series()->sync($seriesIds);
             }
 
-            if (!empty($data['engines']) && is_array($data['engines'])) {
+            if (! empty($data['engines']) && is_array($data['engines'])) {
                 $engineIds = $this->getIdsFor(Engine::class, $data['engines']);
                 $game->engines()->sync($engineIds);
             }
 
             $companySync = [];
-            if (!empty($data['developers']) && is_array($data['developers'])) {
+            if (! empty($data['developers']) && is_array($data['developers'])) {
                 $devIds = $this->getIdsFor(Company::class, $data['developers']);
                 foreach ($devIds as $id) {
                     $companySync[$id] = ['role' => 'developer'];
                 }
             }
-            if (!empty($data['publishers']) && is_array($data['publishers'])) {
+            if (! empty($data['publishers']) && is_array($data['publishers'])) {
                 $pubIds = $this->getIdsFor(Company::class, $data['publishers']);
                 foreach ($pubIds as $id) {
                     $companySync[$id] = ['role' => 'publisher'];
                 }
             }
-            if (!empty($companySync)) {
+            if (! empty($companySync)) {
                 $game->companies()->sync($companySync);
             }
         });
@@ -148,8 +149,8 @@ class ProcessGamePageJob implements ShouldQueue
     /**
      * Create or find models by slug and return their IDs.
      *
-     * @param class-string<\Illuminate\Database\Eloquent\Model> $modelClass
-     * @param string[] $names
+     * @param  class-string<\Illuminate\Database\Eloquent\Model>  $modelClass
+     * @param  string[]  $names
      * @return int[]
      */
     private function getIdsFor(string $modelClass, array $names): array
@@ -164,6 +165,7 @@ class ProcessGamePageJob implements ShouldQueue
             );
             $ids[] = $model->id;
         }
+
         return $ids;
     }
 
@@ -176,12 +178,13 @@ class ProcessGamePageJob implements ShouldQueue
         }
         // Collapse multiple whitespace to a single space
         $clean = preg_replace('/\s+/u', ' ', $clean) ?? $clean;
+
         return trim($clean);
     }
 
     private function extractReleaseYear(?string $dateString): ?int
     {
-        if (!$dateString) {
+        if (! $dateString) {
             return null;
         }
         if (preg_match('/(\d{4})/u', $dateString, $m)) {
@@ -189,24 +192,27 @@ class ProcessGamePageJob implements ShouldQueue
             if ($year >= 1950 && $year <= (int) date('Y') + 1) {
                 return $year;
             }
+
             return (int) $m[1];
         }
+
         return null;
     }
 
     private function parseDate(?string $dateString): ?Carbon
     {
-        if (!$dateString) {
+        if (! $dateString) {
             return null;
         }
         try {
             return Carbon::parse($dateString);
         } catch (Throwable $e) {
-            Log::warning("Could not parse date", [
+            Log::warning('Could not parse date', [
                 'date' => $dateString,
                 'title' => $this->pageTitle,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }

@@ -2,13 +2,13 @@
 
 namespace Artryazanov\WikipediaGamesDb\Jobs;
 
+use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
 
 /**
  * ProcessCategoryJob processes one page of MediaWiki category members and fans out jobs.
@@ -45,9 +45,10 @@ class ProcessCategoryJob implements ShouldQueue
         }
 
         $data = $client->getCategoryMembers($this->categoryTitle, $this->continueToken);
-        if (!$data) {
+        if (! $data) {
             // Fail gracefully so it can be retried
             $this->fail(new \RuntimeException("Failed to fetch members for category: {$this->categoryTitle}"));
+
             return;
         }
 
@@ -67,7 +68,7 @@ class ProcessCategoryJob implements ShouldQueue
             }
         }
 
-        if (!empty($data['continue'])) {
+        if (! empty($data['continue'])) {
             self::dispatch($this->categoryTitle, $data['continue'])
                 ->onConnection(config('game-scraper.queue_connection'))
                 ->onQueue(config('game-scraper.queue_name'));

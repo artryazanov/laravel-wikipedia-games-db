@@ -2,8 +2,8 @@
 
 namespace Artryazanov\WikipediaGamesDb\Console;
 
-use Illuminate\Console\Command;
 use Artryazanov\WikipediaGamesDb\Jobs\ProcessCategoryJob;
+use Illuminate\Console\Command;
 
 /**
  * Console command to initiate scraping of English Wikipedia for video games.
@@ -18,8 +18,9 @@ class ScrapeWikipediaCommand extends Command
     public function handle(): int
     {
         $startCategory = $this->option('category') ?: config('game-scraper.root_category');
-        if (!$startCategory) {
+        if (! $startCategory) {
             $this->error('No start category provided and no root_category configured.');
+
             return self::FAILURE;
         }
 
@@ -30,6 +31,7 @@ class ScrapeWikipediaCommand extends Command
             ->onQueue(config('game-scraper.queue_name'));
 
         $this->info('Scraping process initiated. Monitor your queue worker for progress.');
+
         return self::SUCCESS;
     }
 }
