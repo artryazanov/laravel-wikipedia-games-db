@@ -30,6 +30,19 @@
       ]
     }
   },
+  "scripts": {
+    "test": "vendor/bin/phpunit"
+  },
+  "require-dev": {
+    "orchestra/testbench": "^8.0|^9.0|^10.0",
+    "phpunit/phpunit": "^10.5|^11.0",
+    "laravel/pint": "^1.24"
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
+    }
+  },
   "config": {
     "sort-packages": true
   },
