@@ -3,12 +3,10 @@
 namespace Artryazanov\WikipediaGamesDb\Console;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Artryazanov\WikipediaGamesDb\Jobs\ProcessCategoryJob;
 
 /**
- * Console command to initiate scraping of Russian Wikipedia for video games.
+ * Console command to initiate scraping of English Wikipedia for video games.
  */
 class ScrapeWikipediaCommand extends Command
 {

@@ -26,13 +26,9 @@ class InfoboxParser
         'Genres' => 'genres',
         'Genre(s)' => 'genres',
 
-        // Engines (English)
         'Engine' => 'engines',
         'Engines' => 'engines',
         'Engine(s)' => 'engines',
-        // Engines (Russian)
-        'Движок' => 'engines',
-        'Игровой движок' => 'engines',
 
         'Mode' => 'modes',
         'Modes' => 'modes',
