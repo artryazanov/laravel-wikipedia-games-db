@@ -33,7 +33,7 @@ class LongSlugTest extends TestCase
                 'description' => 'Desc',
                 'release_date' => '2000-01-01',
                 'genres' => [$longName],
-                                'cover_image_url' => 'https://example/img.jpg',
+                'cover_image_url' => 'https://example/img.jpg',
             ]);
         });
 
