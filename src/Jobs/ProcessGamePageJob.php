@@ -44,11 +44,6 @@ class ProcessGamePageJob implements ShouldQueue
     {
         Log::info('Processing game page', ['title' => $this->pageTitle]);
 
-        // Idempotency: if game already exists by title, skip
-        if (Game::where('title', $this->pageTitle)->exists()) {
-            Log::info('Game already exists, skipping', ['title' => $this->pageTitle]);
-            return;
-        }
 
         // Throttle
         $delayMs = (int) config('game-scraper.throttle_milliseconds', 1000);
@@ -85,7 +80,9 @@ class ProcessGamePageJob implements ShouldQueue
             // Build wikipedia_url from title
             $wikipediaUrl = 'https://en.wikipedia.org/wiki/' . str_replace(' ', '_', $this->pageTitle);
 
-            $game = Game::create([
+            // Upsert game by title
+            $game = Game::where('title', $this->pageTitle)->first();
+            $payload = [
                 'title' => $this->pageTitle,
                 'clean_title' => $cleanTitle,
                 'wikipedia_url' => $wikipediaUrl,
@@ -94,7 +91,14 @@ class ProcessGamePageJob implements ShouldQueue
                 'cover_image_url' => $data['cover_image_url'] ?? null,
                 'release_date' => $this->parseDate($data['release_date'] ?? null)?->toDateString(),
                 'release_year' => $releaseYear,
-            ]);
+            ];
+
+            if ($game) {
+                $game->fill($payload);
+                $game->save();
+            } else {
+                $game = Game::create($payload);
+            }
 
             // Sync relations
             if (!empty($data['genres']) && is_array($data['genres'])) {
