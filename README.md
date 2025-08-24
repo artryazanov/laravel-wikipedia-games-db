@@ -124,7 +124,7 @@ protected function schedule(\Illuminate\Console\Scheduling\Schedule $schedule): 
 - Migrations not found — run the vendor:publish step for migrations or rely on the package-loaded migrations.
 
 ## License
-MIT License. See the LICENSE file in your project or include your own licensing terms if you vendor this package.
+The Unlicense. This is free and unencumbered software released into the public domain. See the LICENSE file or https://unlicense.org for details.
 
 ## Credits
 - Vendor: Artryazanov

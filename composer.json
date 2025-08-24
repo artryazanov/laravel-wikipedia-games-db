@@ -2,7 +2,7 @@
   "name": "artryazanov/laravel-wikipedia-games-db",
   "description": "A Laravel package to build a video game database by scraping English Wikipedia.",
   "type": "laravel-package",
-  "license": "MIT",
+  "license": "Unlicense",
   "authors": [
     {
       "name": "Artryazanov"
