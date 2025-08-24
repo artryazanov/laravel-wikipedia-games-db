@@ -175,6 +175,7 @@ class ProcessGamePageJob implements ShouldQueue
         if ($slug === '') {
             $hash = substr(sha1($name), 0, 12);
             $fallback = 'n-a-'.$hash;
+
             return substr($fallback, 0, $maxLen);
         }
         if (strlen($slug) <= $maxLen) {
@@ -188,6 +189,7 @@ class ProcessGamePageJob implements ShouldQueue
         }
         $base = substr($slug, 0, $baseLen);
         $base = rtrim($base, '-');
+
         return $base.$suffix;
     }
 
