@@ -105,10 +105,6 @@ class InfoboxParser
 
     /**
      * Extract data depending on internal field key.
-     *
-     * @param Crawler $cell
-     * @param string $key
-     * @return mixed
      */
     private function extractDataFromCell(Crawler $cell, string $key): mixed
     {
