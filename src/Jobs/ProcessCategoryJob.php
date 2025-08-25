@@ -36,6 +36,7 @@ class ProcessCategoryJob extends AbstractWikipediaJob
         if (! $data) {
             // Fail gracefully so it can be retried
             $this->fail(new \RuntimeException("Failed to fetch members for category: {$this->categoryTitle}"));
+
             return;
         }
 
