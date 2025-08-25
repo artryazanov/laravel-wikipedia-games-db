@@ -26,7 +26,7 @@ class ProcessCategoryJob extends AbstractWikipediaJob implements ShouldBeUnique
      */
     public function uniqueId(): string
     {
-        return static::class . ':' . $this->categoryTitle;
+        return static::class.':'.$this->categoryTitle;
     }
 
     /**

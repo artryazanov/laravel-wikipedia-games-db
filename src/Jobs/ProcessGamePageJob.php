@@ -36,7 +36,7 @@ class ProcessGamePageJob extends AbstractWikipediaJob implements ShouldBeUnique
      */
     public function uniqueId(): string
     {
-        return static::class . ':' . $this->pageTitle;
+        return static::class.':'.$this->pageTitle;
     }
 
     /**
