@@ -55,6 +55,7 @@ class MediaWikiClient
             ]);
             $bundle = ['html' => null, 'wikitext' => null];
             $this->parseBundleCache[$pageTitle] = $bundle;
+
             return $bundle;
         }
 
@@ -102,6 +103,7 @@ class MediaWikiClient
         if ($restResp->ok()) {
             $json = $restResp->json();
             $this->restSummaryCache[$pageTitle] = $json;
+
             return $json;
         }
 
@@ -163,6 +165,7 @@ class MediaWikiClient
     {
         $bundle = $this->fetchParseBundle($pageTitle);
         $html = $bundle['html'] ?? null;
+
         return is_string($html) && $html !== '' ? $html : null;
     }
 
@@ -280,6 +283,7 @@ class MediaWikiClient
     {
         $bundle = $this->fetchParseBundle($pageTitle);
         $wt = $bundle['wikitext'] ?? null;
+
         return is_string($wt) && $wt !== '' ? $wt : null;
     }
 }
