@@ -14,6 +14,12 @@ class MediaWikiClient
 {
     protected PendingRequest $http;
 
+    /** @var array<string, array{html: ?string, wikitext: ?string}> */
+    protected array $parseBundleCache = [];
+
+    /** @var array<string, array|null> Cached REST summary JSON (null indicates cached miss) */
+    protected array $restSummaryCache = [];
+
     public function __construct(
         protected string $apiEndpoint,
         protected string $userAgent
@@ -21,6 +27,88 @@ class MediaWikiClient
         $this->http = Http::baseUrl($apiEndpoint)
             ->withHeaders(['User-Agent' => $userAgent])
             ->acceptJson();
+    }
+
+    /**
+     * Fetch and cache parse bundle (HTML and wikitext) for a page in a single request.
+     * Returns [html => ?string, wikitext => ?string].
+     */
+    protected function fetchParseBundle(string $pageTitle): array
+    {
+        if (array_key_exists($pageTitle, $this->parseBundleCache)) {
+            return $this->parseBundleCache[$pageTitle];
+        }
+
+        $params = [
+            'action' => 'parse',
+            'format' => 'json',
+            'page' => $pageTitle,
+            'prop' => 'text|wikitext',
+            'redirects' => 1,
+        ];
+
+        $response = $this->http->get('', $params);
+        if ($response->failed()) {
+            Log::warning('MediaWiki parse bundle failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+            $bundle = ['html' => null, 'wikitext' => null];
+            $this->parseBundleCache[$pageTitle] = $bundle;
+            return $bundle;
+        }
+
+        $json = $response->json();
+        $html = null;
+        $wt = null;
+
+        $text = $json['parse']['text'] ?? null;
+        if (is_array($text)) {
+            $html = $text['*'] ?? null;
+        } elseif (is_string($text)) {
+            $html = $text;
+        }
+
+        $wikitext = $json['parse']['wikitext'] ?? null;
+        if (is_array($wikitext)) {
+            $wt = $wikitext['*'] ?? null;
+        } elseif (is_string($wikitext)) {
+            $wt = $wikitext;
+        }
+
+        $bundle = ['html' => $html, 'wikitext' => $wt];
+        $this->parseBundleCache[$pageTitle] = $bundle;
+
+        return $bundle;
+    }
+
+    /**
+     * Fetch and cache REST summary JSON for a page. Returns JSON array or null on failure.
+     * Caches null to avoid duplicate failed requests within the same process.
+     */
+    protected function fetchRestSummaryJson(string $pageTitle): ?array
+    {
+        if (array_key_exists($pageTitle, $this->restSummaryCache)) {
+            return $this->restSummaryCache[$pageTitle];
+        }
+
+        $origin = $this->wikiOrigin();
+        $restUrl = rtrim($origin, '/').'/api/rest_v1/page/summary/'.rawurlencode($pageTitle);
+
+        $restResp = Http::withHeaders(['User-Agent' => $this->userAgent])
+            ->acceptJson()
+            ->get($restUrl);
+
+        if ($restResp->ok()) {
+            $json = $restResp->json();
+            $this->restSummaryCache[$pageTitle] = $json;
+            return $json;
+        }
+
+        Log::info('REST summary request failed', ['status' => $restResp->status(), 'url' => $restUrl]);
+        $this->restSummaryCache[$pageTitle] = null;
+
+        return null;
     }
 
     /**
@@ -73,33 +161,9 @@ class MediaWikiClient
      */
     public function getPageHtml(string $pageTitle): ?string
     {
-        $params = [
-            'action' => 'parse',
-            'format' => 'json',
-            'page' => $pageTitle,
-            'prop' => 'text',
-            'redirects' => 1,
-        ];
-
-        $response = $this->http->get('', $params);
-
-        if ($response->failed()) {
-            Log::warning('MediaWiki getPageHtml failed', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-            ]);
-
-            return null;
-        }
-
-        $json = $response->json();
-        $text = $json['parse']['text'] ?? null;
-        if (is_array($text)) {
-            // MediaWiki returns an object with "*" key for HTML string
-            return $text['*'] ?? null;
-        }
-
-        return is_string($text) ? $text : null;
+        $bundle = $this->fetchParseBundle($pageTitle);
+        $html = $bundle['html'] ?? null;
+        return is_string($html) && $html !== '' ? $html : null;
     }
 
     /**
@@ -108,21 +172,13 @@ class MediaWikiClient
      */
     public function getPageMainImage(string $pageTitle): ?string
     {
-        // Try REST summary first
-        $origin = $this->wikiOrigin();
-        $restUrl = rtrim($origin, '/').'/api/rest_v1/page/summary/'.rawurlencode($pageTitle);
-
-        $restResp = Http::withHeaders(['User-Agent' => $this->userAgent])
-            ->acceptJson()
-            ->get($restUrl);
-        if ($restResp->ok()) {
-            $json = $restResp->json();
+        // Try cached REST summary first (shared with description)
+        $json = $this->fetchRestSummaryJson($pageTitle);
+        if (is_array($json)) {
             $url = Arr::get($json, 'originalimage.source') ?: Arr::get($json, 'thumbnail.source');
             if (is_string($url) && $url !== '') {
                 return $url;
             }
-        } else {
-            Log::info('REST summary request failed', ['status' => $restResp->status(), 'url' => $restUrl]);
         }
 
         // Fallback: Action API pageimages
@@ -176,21 +232,13 @@ class MediaWikiClient
      */
     public function getPageLeadDescription(string $pageTitle): ?string
     {
-        // Prefer REST summary extract (plain text)
-        $origin = $this->wikiOrigin();
-        $restUrl = rtrim($origin, '/').'/api/rest_v1/page/summary/'.rawurlencode($pageTitle);
-
-        $restResp = Http::withHeaders(['User-Agent' => $this->userAgent])
-            ->acceptJson()
-            ->get($restUrl);
-        if ($restResp->ok()) {
-            $json = $restResp->json();
+        // Prefer cached REST summary extract (shared with image)
+        $json = $this->fetchRestSummaryJson($pageTitle);
+        if (is_array($json)) {
             $extract = Arr::get($json, 'extract');
             if (is_string($extract) && $extract !== '') {
                 return $extract;
             }
-        } else {
-            Log::info('REST summary request (description) failed', ['status' => $restResp->status(), 'url' => $restUrl]);
         }
 
         // Fallback: Action API TextExtracts (intro, plaintext)
@@ -230,37 +278,8 @@ class MediaWikiClient
      */
     public function getPageWikitext(string $pageTitle): ?string
     {
-        $params = [
-            'action' => 'query',
-            'format' => 'json',
-            'prop' => 'revisions',
-            'rvprop' => 'content',
-            'rvslots' => 'main',
-            'titles' => $pageTitle,
-            'formatversion' => 2,
-            'redirects' => 1,
-        ];
-
-        $resp = $this->http->get('', $params);
-        if ($resp->failed()) {
-            Log::warning('MediaWiki getPageWikitext failed', [
-                'status' => $resp->status(),
-                'body' => $resp->body(),
-            ]);
-
-            return null;
-        }
-
-        $json = $resp->json();
-        $pages = Arr::get($json, 'query.pages', []);
-        if (is_array($pages) && ! empty($pages)) {
-            $first = reset($pages);
-            $content = Arr::get($first, 'revisions.0.slots.main.content');
-            if (is_string($content) && $content !== '') {
-                return $content;
-            }
-        }
-
-        return null;
+        $bundle = $this->fetchParseBundle($pageTitle);
+        $wt = $bundle['wikitext'] ?? null;
+        return is_string($wt) && $wt !== '' ? $wt : null;
     }
 }
