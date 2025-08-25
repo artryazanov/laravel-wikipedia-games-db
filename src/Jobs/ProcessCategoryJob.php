@@ -3,11 +3,12 @@
 namespace Artryazanov\WikipediaGamesDb\Jobs;
 
 use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
+use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 
 /**
  * ProcessCategoryJob processes one page of MediaWiki category members and fans out jobs.
  */
-class ProcessCategoryJob extends AbstractWikipediaJob
+class ProcessCategoryJob extends AbstractWikipediaJob implements ShouldBeUniqueUntilProcessing
 {
     /** Number of attempts before failing the job. */
     public int $tries = 3;
@@ -19,6 +20,14 @@ class ProcessCategoryJob extends AbstractWikipediaJob
         public string $categoryTitle,
         public ?string $continueToken = null
     ) {}
+
+    /**
+     * Unique identifier for this job to prevent duplicate enqueues for the same category.
+     */
+    public function uniqueId(): string
+    {
+        return $this->categoryTitle;
+    }
 
     /**
      * Handle the queued job.

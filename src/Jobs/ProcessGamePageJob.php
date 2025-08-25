@@ -12,6 +12,7 @@ use Artryazanov\WikipediaGamesDb\Models\Series;
 use Artryazanov\WikipediaGamesDb\Services\InfoboxParser;
 use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
 use Carbon\Carbon;
+use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -20,7 +21,7 @@ use Throwable;
 /**
  * ProcessGamePageJob fetches a page HTML, parses infobox data, and persists it idempotently.
  */
-class ProcessGamePageJob extends AbstractWikipediaJob
+class ProcessGamePageJob extends AbstractWikipediaJob implements ShouldBeUniqueUntilProcessing
 {
     /** Number of attempts before failing the job. */
     public int $tries = 3;
@@ -29,6 +30,14 @@ class ProcessGamePageJob extends AbstractWikipediaJob
     public int $backoff = 120;
 
     public function __construct(public string $pageTitle) {}
+
+    /**
+     * Unique identifier for this job to prevent duplicate enqueues for the same page.
+     */
+    public function uniqueId(): string
+    {
+        return $this->pageTitle;
+    }
 
     /**
      * Handle the queued job.
