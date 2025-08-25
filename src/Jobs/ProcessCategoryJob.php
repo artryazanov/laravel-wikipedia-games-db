@@ -3,20 +3,12 @@
 namespace Artryazanov\WikipediaGamesDb\Jobs;
 
 use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Log;
 
 /**
  * ProcessCategoryJob processes one page of MediaWiki category members and fans out jobs.
  */
-class ProcessCategoryJob implements ShouldQueue
+class ProcessCategoryJob extends AbstractWikipediaJob
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
-
     /** Number of attempts before failing the job. */
     public int $tries = 3;
 
@@ -33,22 +25,17 @@ class ProcessCategoryJob implements ShouldQueue
      */
     public function handle(MediaWikiClient $client): void
     {
-        Log::info('Processing category', [
-            'category' => $this->categoryTitle,
-            'continue' => $this->continueToken,
-        ]);
+        $this->executeWithThrottle(function () use ($client) {
+            $this->doJob($client);
+        });
+    }
 
-        // Throttle to respect API etiquette
-        $delayMs = (int) config('game-scraper.throttle_milliseconds', 1000);
-        if ($delayMs > 0) {
-            usleep($delayMs * 1000);
-        }
-
+    protected function doJob(MediaWikiClient $client): void
+    {
         $data = $client->getCategoryMembers($this->categoryTitle, $this->continueToken);
         if (! $data) {
             // Fail gracefully so it can be retried
             $this->fail(new \RuntimeException("Failed to fetch members for category: {$this->categoryTitle}"));
-
             return;
         }
 

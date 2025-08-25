@@ -12,11 +12,6 @@ use Artryazanov\WikipediaGamesDb\Models\Series;
 use Artryazanov\WikipediaGamesDb\Services\InfoboxParser;
 use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
 use Carbon\Carbon;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -25,10 +20,8 @@ use Throwable;
 /**
  * ProcessGamePageJob fetches a page HTML, parses infobox data, and persists it idempotently.
  */
-class ProcessGamePageJob implements ShouldQueue
+class ProcessGamePageJob extends AbstractWikipediaJob
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
-
     /** Number of attempts before failing the job. */
     public int $tries = 3;
 
@@ -42,25 +35,22 @@ class ProcessGamePageJob implements ShouldQueue
      */
     public function handle(MediaWikiClient $client, InfoboxParser $parser): void
     {
-        Log::info('Processing game page', ['title' => $this->pageTitle]);
+        $this->executeWithThrottle(function () use ($client, $parser) {
+            $this->doJob($client, $parser);
+        });
+    }
 
-        // Throttle
-        $delayMs = (int) config('game-scraper.throttle_milliseconds', 1000);
-        if ($delayMs > 0) {
-            usleep($delayMs * 1000);
-        }
-
+    private function doJob(MediaWikiClient $client, InfoboxParser $parser): void
+    {
         $html = $client->getPageHtml($this->pageTitle);
         if (! $html) {
             $this->fail(new \RuntimeException("Failed to fetch HTML for page: {$this->pageTitle}"));
-
             return;
         }
 
         $data = $parser->parse($html);
         if (empty($data)) {
             Log::warning('No infobox data found for page', ['title' => $this->pageTitle]);
-
             return;
         }
 
