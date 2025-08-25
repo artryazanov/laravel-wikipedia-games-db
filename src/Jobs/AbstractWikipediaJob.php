@@ -24,6 +24,7 @@ abstract class AbstractWikipediaJob implements ShouldQueue
         $delayMs = (int) config('game-scraper.throttle_milliseconds', 1000);
         if ($delayMs <= 0) {
             $callback();
+
             return;
         }
 

@@ -54,12 +54,14 @@ class ProcessGamePageJob extends AbstractWikipediaJob implements ShouldBeUniqueU
         $html = $client->getPageHtml($this->pageTitle);
         if (! $html) {
             $this->fail(new \RuntimeException("Failed to fetch HTML for page: {$this->pageTitle}"));
+
             return;
         }
 
         $data = $parser->parse($html);
         if (empty($data)) {
             Log::warning('No infobox data found for page', ['title' => $this->pageTitle]);
+
             return;
         }
 
