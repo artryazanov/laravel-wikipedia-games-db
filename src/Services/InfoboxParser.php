@@ -106,20 +106,21 @@ class InfoboxParser
     /**
      * Extract data depending on internal field key.
      *
+     * @param Crawler $cell
+     * @param string $key
      * @return mixed
      */
-    private function extractDataFromCell(Crawler $cell, string $key)
+    private function extractDataFromCell(Crawler $cell, string $key): mixed
     {
         switch ($key) {
             case 'developers':
             case 'publishers':
-            case 'platforms':
-                return $this->extractList($cell);
             case 'genres':
             case 'modes':
             case 'series':
             case 'engines':
-                return $this->extractLinks($cell);
+            case 'platforms':
+                return ($links = $this->extractLinks($cell)) ? $links : $this->extractList($cell);
             case 'release_date':
                 return $this->extractDate($cell);
             default:
