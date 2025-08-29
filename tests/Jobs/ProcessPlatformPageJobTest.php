@@ -46,7 +46,6 @@ class ProcessPlatformPageJobTest extends TestCase
         $this->assertSame('2020-11-12', $platform->release_date?->toDateString());
         $this->assertSame('https://www.playstation.com/ps5/', $platform->website_url);
         $this->assertSame('PlayStation 5', $platform->name);
-        $this->assertSame('playstation-5', $platform->slug);
     }
 
     public function test_cover_image_fallback_used_when_missing(): void
@@ -77,14 +76,14 @@ class ProcessPlatformPageJobTest extends TestCase
         $this->assertSame('https://img/fallback-switch.jpg', $platform->cover_image_url);
     }
 
-    public function test_updates_existing_platform_found_by_slug(): void
+    public function test_updates_existing_platform_found_by_wikipedia_url(): void
     {
         config()->set('game-scraper.throttle_milliseconds', 0);
         $title = 'Xbox Series X';
         $html = '<html></html>';
 
-        // Pre-create platform with different name but matching slug
-        Platform::create(['name' => 'Xbox Series X Console', 'slug' => 'xbox-series-x']);
+        // Pre-create platform with different name but matching wikipedia_url
+        Platform::create(['name' => 'Xbox Series X Console', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Xbox_Series_X']);
 
         $client = $this->mock(MediaWikiClient::class, function ($mock) use ($title, $html) {
             $mock->shouldReceive('getPageHtml')->once()->with($title)->andReturn($html);

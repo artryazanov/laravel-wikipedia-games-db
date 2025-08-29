@@ -17,7 +17,6 @@ class Mode extends Model
      */
     protected $fillable = [
         'name',
-        'slug',
         'title',
         'wikipedia_url',
         'description',

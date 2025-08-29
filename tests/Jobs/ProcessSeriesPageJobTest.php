@@ -39,17 +39,16 @@ class ProcessSeriesPageJobTest extends TestCase
         $this->assertSame('Nintendo action-adventure franchise', $series->description);
         $this->assertSame('series wikitext', $series->wikitext);
         $this->assertSame('The Legend of Zelda', $series->name);
-        $this->assertSame('the-legend-of-zelda', $series->slug);
     }
 
-    public function test_updates_existing_series_found_by_slug(): void
+    public function test_updates_existing_series_found_by_wikipedia_url(): void
     {
         config()->set('game-scraper.throttle_milliseconds', 0);
         $title = 'Mario (franchise)';
         $html = '<html></html>';
 
-        // Pre-create series with different name but matching slug derived from title
-        Series::create(['name' => 'Mario', 'slug' => 'mario-franchise']);
+        // Pre-create series with different name but matching wikipedia_url derived from title
+        Series::create(['name' => 'Mario', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Mario_(franchise)']);
 
         $client = $this->mock(MediaWikiClient::class, function ($mock) use ($title, $html) {
             $mock->shouldReceive('getPageHtml')->once()->with($title)->andReturn($html);

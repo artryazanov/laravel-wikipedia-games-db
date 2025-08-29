@@ -8,7 +8,6 @@ use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 /**
  * ProcessSeriesPageJob fetches a Wikipedia series page, parses data, and persists it.
@@ -62,10 +61,9 @@ class ProcessSeriesPageJob extends AbstractWikipediaJob implements ShouldBeUniqu
         $wikipediaUrl = 'https://en.wikipedia.org/wiki/'.str_replace(' ', '_', $this->pageTitle);
 
         DB::transaction(function () use ($leadDescription, $wikitext, $wikipediaUrl) {
-            // Try to find an existing series by name or slug derived from the page title
-            $slugFromTitle = $this->makeSlug($this->pageTitle, 255);
+            // Try to find an existing series by name or wikipedia_url
             $series = Series::where('name', $this->pageTitle)
-                ->orWhere('slug', $slugFromTitle)
+                ->orWhere('wikipedia_url', $wikipediaUrl)
                 ->first();
 
             $payload = [
@@ -81,33 +79,8 @@ class ProcessSeriesPageJob extends AbstractWikipediaJob implements ShouldBeUniqu
             } else {
                 $series = Series::create(array_merge([
                     'name' => $this->pageTitle,
-                    'slug' => $slugFromTitle,
                 ], $payload));
             }
         });
-    }
-
-    private function makeSlug(string $name, int $maxLen = 255): string
-    {
-        $slug = Str::slug($name);
-        if ($slug === '') {
-            $hash = substr(sha1($name), 0, 12);
-            $fallback = 'n-a-'.$hash;
-
-            return substr($fallback, 0, $maxLen);
-        }
-        if (strlen($slug) <= $maxLen) {
-            return $slug;
-        }
-        $hash = substr(sha1($name), 0, 8);
-        $suffix = '-'.$hash;
-        $baseLen = $maxLen - strlen($suffix);
-        if ($baseLen < 1) {
-            return substr($slug, 0, $maxLen);
-        }
-        $base = substr($slug, 0, $baseLen);
-        $base = rtrim($base, '-');
-
-        return $base.$suffix;
     }
 }

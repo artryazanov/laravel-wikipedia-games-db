@@ -46,7 +46,6 @@ class ProcessCompanyPageJobTest extends TestCase
         $this->assertSame(1991, (int) $company->founded);
         $this->assertSame('https://www.idsoftware.com', $company->website_url);
         $this->assertSame('Id Software', $company->name);
-        $this->assertSame('id-software', $company->slug);
     }
 
     public function test_cover_image_fallback_used_when_missing(): void
@@ -77,14 +76,14 @@ class ProcessCompanyPageJobTest extends TestCase
         $this->assertSame('https://img/fallback-logo.jpg', $company->cover_image_url);
     }
 
-    public function test_updates_existing_company_found_by_slug(): void
+    public function test_updates_existing_company_found_by_wikipedia_url(): void
     {
         config()->set('game-scraper.throttle_milliseconds', 0);
         $title = 'Id Software';
         $html = '<html></html>';
 
-        // Pre-create company with different name but matching slug
-        Company::create(['name' => 'Id Software, Inc.', 'slug' => 'id-software']);
+        // Pre-create company with different name but matching wikipedia_url
+        Company::create(['name' => 'Id Software, Inc.', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Id_Software']);
 
         $client = $this->mock(MediaWikiClient::class, function ($mock) use ($title, $html) {
             $mock->shouldReceive('getPageHtml')->once()->with($title)->andReturn($html);

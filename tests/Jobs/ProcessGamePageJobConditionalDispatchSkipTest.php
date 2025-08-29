@@ -31,28 +31,28 @@ class ProcessGamePageJobConditionalDispatchSkipTest extends TestCase
 
         // Pre-create records that match link titles and already have wikipedia_url filled
         // Companies
-        Company::create(['name' => 'Id Software', 'slug' => 'id-software', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Id_Software']);
-        Company::create(['name' => 'GT Interactive', 'slug' => 'gt-interactive', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/GT_Interactive']);
+        Company::create(['name' => 'Id Software', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Id_Software']);
+        Company::create(['name' => 'GT Interactive', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/GT_Interactive']);
 
         // Platforms
-        Platform::create(['name' => 'Microsoft Windows', 'slug' => 'microsoft-windows', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Microsoft_Windows']);
-        Platform::create(['name' => 'PlayStation 5', 'slug' => 'playstation-5', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/PlayStation_5']);
+        Platform::create(['name' => 'Microsoft Windows', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Microsoft_Windows']);
+        Platform::create(['name' => 'PlayStation 5', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/PlayStation_5']);
 
         // Engines
-        Engine::create(['name' => 'Unreal Engine', 'slug' => 'unreal-engine', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Unreal_Engine']);
-        Engine::create(['name' => 'Unity (game engine)', 'slug' => 'unity-game-engine', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Unity_(game_engine)']);
+        Engine::create(['name' => 'Unreal Engine', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Unreal_Engine']);
+        Engine::create(['name' => 'Unity (game engine)', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Unity_(game_engine)']);
 
         // Genres
-        Genre::create(['name' => 'Shooter (video games)', 'slug' => 'shooter-video-games', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Shooter_(video_games)']);
-        Genre::create(['name' => 'Role-playing video game', 'slug' => 'role-playing-video-game', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Role-playing_video_game']);
+        Genre::create(['name' => 'Shooter (video games)', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Shooter_(video_games)']);
+        Genre::create(['name' => 'Role-playing video game', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Role-playing_video_game']);
 
         // Modes
-        Mode::create(['name' => 'Single-player video game', 'slug' => 'single-player-video-game', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Single-player_video_game']);
-        Mode::create(['name' => 'Multiplayer video game', 'slug' => 'multiplayer-video-game', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Multiplayer_video_game']);
+        Mode::create(['name' => 'Single-player video game', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Single-player_video_game']);
+        Mode::create(['name' => 'Multiplayer video game', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Multiplayer_video_game']);
 
         // Series
-        Series::create(['name' => 'The Legend of Zelda', 'slug' => 'the-legend-of-zelda', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/The_Legend_of_Zelda']);
-        Series::create(['name' => 'Mario (franchise)', 'slug' => 'mario-franchise', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Mario_(franchise)']);
+        Series::create(['name' => 'The Legend of Zelda', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/The_Legend_of_Zelda']);
+        Series::create(['name' => 'Mario (franchise)', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Mario_(franchise)']);
 
         $title = 'Game With Links Already Known';
         $html = '<html></html>';

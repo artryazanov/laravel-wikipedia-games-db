@@ -15,7 +15,6 @@ use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -199,7 +198,7 @@ class ProcessGamePageJob extends AbstractWikipediaJob implements ShouldBeUnique
     }
 
     /**
-     * Create or find models by slug and return their IDs.
+     * Create or find taxonomy models by name and return their IDs.
      *
      * @param  class-string<\Illuminate\Database\Eloquent\Model>  $modelClass
      * @param  string[]  $names
@@ -209,40 +208,14 @@ class ProcessGamePageJob extends AbstractWikipediaJob implements ShouldBeUnique
     {
         $ids = [];
         foreach ($names as $name) {
-            $slug = $this->makeSlug($name, 255);
             /** @var \Illuminate\Database\Eloquent\Model $model */
             $model = $modelClass::firstOrCreate(
-                ['slug' => $slug],
                 ['name' => $name]
             );
             $ids[] = $model->id;
         }
 
         return $ids;
-    }
-
-    private function makeSlug(string $name, int $maxLen = 255): string
-    {
-        $slug = Str::slug($name);
-        if ($slug === '') {
-            $hash = substr(sha1($name), 0, 12);
-            $fallback = 'n-a-'.$hash;
-
-            return substr($fallback, 0, $maxLen);
-        }
-        if (strlen($slug) <= $maxLen) {
-            return $slug;
-        }
-        $hash = substr(sha1($name), 0, 8);
-        $suffix = '-'.$hash;
-        $baseLen = $maxLen - strlen($suffix);
-        if ($baseLen < 1) {
-            return substr($slug, 0, $maxLen);
-        }
-        $base = substr($slug, 0, $baseLen);
-        $base = rtrim($base, '-');
-
-        return $base.$suffix;
     }
 
     private function makeCleanTitle(string $title): string
@@ -283,11 +256,8 @@ class ProcessGamePageJob extends AbstractWikipediaJob implements ShouldBeUnique
      */
     private function needsDetails(string $modelClass, string $linkedTitle): bool
     {
-        $slug = $this->makeSlug($linkedTitle, 255);
         /** @var \Illuminate\Database\Eloquent\Model|null $record */
-        $record = $modelClass::where('name', $linkedTitle)
-            ->orWhere('slug', $slug)
-            ->first();
+        $record = $modelClass::where('name', $linkedTitle)->first();
 
         if (! $record) {
             return true;

@@ -46,7 +46,6 @@ class ProcessEnginePageJobTest extends TestCase
         $this->assertSame('2005-06-01', $engine->release_date?->toDateString());
         $this->assertSame('https://www.unrealengine.com', $engine->website_url);
         $this->assertSame('Unreal Engine 3', $engine->name);
-        $this->assertSame('unreal-engine-3', $engine->slug);
     }
 
     public function test_cover_image_fallback_used_when_missing(): void
@@ -76,14 +75,14 @@ class ProcessEnginePageJobTest extends TestCase
         $this->assertSame('https://img/fallback-engine.jpg', $engine->cover_image_url);
     }
 
-    public function test_updates_existing_engine_found_by_slug(): void
+    public function test_updates_existing_engine_found_by_wikipedia_url(): void
     {
         config()->set('game-scraper.throttle_milliseconds', 0);
         $title = 'Unreal Engine 3';
         $html = '<html></html>';
 
-        // Pre-create engine with different name but matching slug
-        Engine::create(['name' => 'UE3', 'slug' => 'unreal-engine-3']);
+        // Pre-create engine with different name but matching wikipedia_url
+        Engine::create(['name' => 'UE3', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Unreal_Engine_3']);
 
         $client = $this->mock(MediaWikiClient::class, function ($mock) use ($title, $html) {
             $mock->shouldReceive('getPageHtml')->once()->with($title)->andReturn($html);

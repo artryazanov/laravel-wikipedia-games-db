@@ -41,17 +41,16 @@ class ProcessGenrePageJobTest extends TestCase
         $this->assertSame('Genre lead description', $genre->description);
         $this->assertSame('genre wikitext', $genre->wikitext);
         $this->assertSame('Shooter (video games)', $genre->name);
-        $this->assertSame('shooter-video-games', $genre->slug);
     }
 
-    public function test_updates_existing_genre_found_by_slug(): void
+    public function test_updates_existing_genre_found_by_wikipedia_url(): void
     {
         config()->set('game-scraper.throttle_milliseconds', 0);
         $title = 'Shooter (video games)';
         $html = '<html></html>';
 
-        // Pre-create genre with different name but matching slug derived from title
-        Genre::create(['name' => 'Shooter', 'slug' => 'shooter-video-games']);
+        // Pre-create genre with different name but matching wikipedia_url derived from title
+        Genre::create(['name' => 'Shooter', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Shooter_(video_games)']);
 
         $client = $this->mock(MediaWikiClient::class, function ($mock) use ($title, $html) {
             $mock->shouldReceive('getPageHtml')->once()->with($title)->andReturn($html);

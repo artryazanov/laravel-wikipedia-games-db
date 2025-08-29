@@ -9,7 +9,6 @@ use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -74,10 +73,9 @@ class ProcessPlatformPageJob extends AbstractWikipediaJob implements ShouldBeUni
         $wikipediaUrl = 'https://en.wikipedia.org/wiki/'.str_replace(' ', '_', $this->pageTitle);
 
         DB::transaction(function () use ($data, $leadDescription, $wikitext, $wikipediaUrl) {
-            // Try to find an existing platform by name or slug derived from the page title
-            $slugFromTitle = $this->makeSlug($this->pageTitle, 255);
+            // Try to find an existing platform by name or wikipedia_url
             $platform = Platform::where('name', $this->pageTitle)
-                ->orWhere('slug', $slugFromTitle)
+                ->orWhere('wikipedia_url', $wikipediaUrl)
                 ->first();
 
             $payload = [
@@ -96,34 +94,9 @@ class ProcessPlatformPageJob extends AbstractWikipediaJob implements ShouldBeUni
             } else {
                 $platform = Platform::create(array_merge([
                     'name' => $this->pageTitle,
-                    'slug' => $slugFromTitle,
                 ], $payload));
             }
         });
-    }
-
-    private function makeSlug(string $name, int $maxLen = 255): string
-    {
-        $slug = Str::slug($name);
-        if ($slug === '') {
-            $hash = substr(sha1($name), 0, 12);
-            $fallback = 'n-a-'.$hash;
-
-            return substr($fallback, 0, $maxLen);
-        }
-        if (strlen($slug) <= $maxLen) {
-            return $slug;
-        }
-        $hash = substr(sha1($name), 0, 8);
-        $suffix = '-'.$hash;
-        $baseLen = $maxLen - strlen($suffix);
-        if ($baseLen < 1) {
-            return substr($slug, 0, $maxLen);
-        }
-        $base = substr($slug, 0, $baseLen);
-        $base = rtrim($base, '-');
-
-        return $base.$suffix;
     }
 
     private function parseDate(?string $dateString): ?Carbon
