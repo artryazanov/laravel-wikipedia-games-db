@@ -12,7 +12,24 @@ class Engine extends Model
 {
     protected $table = 'wikipedia_game_engines';
 
-    protected $fillable = ['name', 'slug'];
+    /**
+     * Mass-assignable attributes for extended engine information.
+     */
+    protected $fillable = [
+        'name',
+        'slug',
+        'title',
+        'wikipedia_url',
+        'description',
+        'wikitext',
+        'cover_image_url',
+        'release_date',
+        'website_url',
+    ];
+
+    protected $casts = [
+        'release_date' => 'date',
+    ];
 
     /**
      * Games relation (many-to-many via pivot table).

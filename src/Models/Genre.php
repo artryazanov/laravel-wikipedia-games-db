@@ -12,7 +12,17 @@ class Genre extends Model
 {
     protected $table = 'wikipedia_game_genres';
 
-    protected $fillable = ['name', 'slug'];
+    /**
+     * Mass-assignable attributes for extended genre information.
+     */
+    protected $fillable = [
+        'name',
+        'slug',
+        'title',
+        'wikipedia_url',
+        'description',
+        'wikitext',
+    ];
 
     /**
      * Games relation (many-to-many via pivot table).

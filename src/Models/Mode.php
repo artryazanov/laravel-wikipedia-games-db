@@ -12,7 +12,17 @@ class Mode extends Model
 {
     protected $table = 'wikipedia_game_modes';
 
-    protected $fillable = ['name', 'slug'];
+    /**
+     * Mass-assignable attributes for extended mode information.
+     */
+    protected $fillable = [
+        'name',
+        'slug',
+        'title',
+        'wikipedia_url',
+        'description',
+        'wikitext',
+    ];
 
     /**
      * Games relation (many-to-many via pivot table).

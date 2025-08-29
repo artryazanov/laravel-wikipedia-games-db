@@ -123,6 +123,37 @@ protected function schedule(\Illuminate\Console\Scheduling\Schedule $schedule): 
 - 429 / throttling from API — increase `WIKIPEDIA_GAMES_DB_THROTTLE_MS` and verify your User-Agent.
 - Migrations not found — run the vendor:publish step for migrations or rely on the package-loaded migrations.
 
+## Background jobs & conditional dispatch
+This package processes pages via queued jobs. The main entry point parses a game page and conditionally enqueues per-taxonomy jobs for additional details.
+
+- ProcessGamePageJob: Parses a game page, persists core fields, and dispatches taxonomy jobs for linked items found in the infobox (developers, publishers, platforms, engines, genres, modes, series).
+- ProcessCompanyPageJob: Persists extended company metadata (title, wikipedia_url, description, wikitext, cover_image_url, founded year, website_url).
+- ProcessPlatformPageJob: Persists extended platform metadata (title, wikipedia_url, description, wikitext, cover_image_url, release_date, website_url).
+- ProcessEnginePageJob: Persists extended engine metadata (title, wikipedia_url, description, wikitext, cover_image_url, release_date, website_url).
+- ProcessGenrePageJob: Persists extended genre metadata (title, wikipedia_url, description, wikitext).
+- ProcessModePageJob: Persists extended mode metadata (title, wikipedia_url, description, wikitext).
+- ProcessSeriesPageJob: Persists extended series metadata (title, wikipedia_url, description, wikitext).
+
+Conditional dispatch
+- ProcessGamePageJob will only enqueue a Process*PageJob when the corresponding record is missing or when its wikipedia_url is empty.
+- This minimizes redundant requests and focuses fetching on missing details.
+
+Throttling and uniqueness
+- All jobs inherit a throttle helper that respects game-scraper.throttle_milliseconds to avoid exceeding API limits.
+- Jobs implement ShouldBeUnique and use a uniqueId based on "ClassName:PageTitle" to avoid duplicate enqueues for the same page.
+
+## Testing
+This repository includes a full test suite based on Orchestra Testbench with an in-memory SQLite database.
+
+- Install dependencies:
+  - composer install
+- Run tests (Windows):
+  - .\vendor\bin\phpunit --configuration phpunit.xml
+- Run tests (Unix/macOS):
+  - vendor/bin/phpunit --configuration phpunit.xml
+
+If phpunit cannot be found, ensure Composer finished installing dependencies successfully.
+
 ## License
 The Unlicense. This is free and unencumbered software released into the public domain. See the LICENSE file or https://unlicense.org for details.
 

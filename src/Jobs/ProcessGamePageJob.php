@@ -78,6 +78,57 @@ class ProcessGamePageJob extends AbstractWikipediaJob implements ShouldBeUnique
         $wikitext = $client->getPageWikitext($this->pageTitle);
         $releaseYear = $this->extractReleaseYear($data['release_date'] ?? null);
 
+        // Dispatch company page jobs for linked developers/publishers
+        $linkedCompanies = array_unique(array_merge(
+            $data['developers_link_titles'] ?? [],
+            $data['publishers_link_titles'] ?? []
+        ));
+        foreach ($linkedCompanies as $companyTitle) {
+            if (is_string($companyTitle) && $companyTitle !== '' && $this->needsDetails(Company::class, $companyTitle)) {
+                ProcessCompanyPageJob::dispatch($companyTitle);
+            }
+        }
+
+        // Dispatch platform page jobs for linked platforms
+        $linkedPlatforms = array_unique($data['platforms_link_titles'] ?? []);
+        foreach ($linkedPlatforms as $platformTitle) {
+            if (is_string($platformTitle) && $platformTitle !== '' && $this->needsDetails(Platform::class, $platformTitle)) {
+                ProcessPlatformPageJob::dispatch($platformTitle);
+            }
+        }
+
+        // Dispatch engine page jobs for linked engines
+        $linkedEngines = array_unique($data['engines_link_titles'] ?? []);
+        foreach ($linkedEngines as $engineTitle) {
+            if (is_string($engineTitle) && $engineTitle !== '' && $this->needsDetails(Engine::class, $engineTitle)) {
+                ProcessEnginePageJob::dispatch($engineTitle);
+            }
+        }
+
+        // Dispatch genre page jobs for linked genres
+        $linkedGenres = array_unique($data['genres_link_titles'] ?? []);
+        foreach ($linkedGenres as $genreTitle) {
+            if (is_string($genreTitle) && $genreTitle !== '' && $this->needsDetails(Genre::class, $genreTitle)) {
+                ProcessGenrePageJob::dispatch($genreTitle);
+            }
+        }
+
+        // Dispatch mode page jobs for linked modes
+        $linkedModes = array_unique($data['modes_link_titles'] ?? []);
+        foreach ($linkedModes as $modeTitle) {
+            if (is_string($modeTitle) && $modeTitle !== '' && $this->needsDetails(Mode::class, $modeTitle)) {
+                ProcessModePageJob::dispatch($modeTitle);
+            }
+        }
+
+        // Dispatch series page jobs for linked series
+        $linkedSeries = array_unique($data['series_link_titles'] ?? []);
+        foreach ($linkedSeries as $seriesTitle) {
+            if (is_string($seriesTitle) && $seriesTitle !== '' && $this->needsDetails(Series::class, $seriesTitle)) {
+                ProcessSeriesPageJob::dispatch($seriesTitle);
+            }
+        }
+
         DB::transaction(function () use ($data, $leadDescription, $cleanTitle, $wikitext, $releaseYear) {
             // Build wikipedia_url from title
             $wikipediaUrl = 'https://en.wikipedia.org/wiki/'.str_replace(' ', '_', $this->pageTitle);
@@ -222,6 +273,29 @@ class ProcessGamePageJob extends AbstractWikipediaJob implements ShouldBeUnique
         }
 
         return null;
+    }
+
+    /**
+     * Determine whether a taxonomy record needs details to be fetched.
+     * Returns true when the record does not exist yet or its wikipedia_url is empty.
+     *
+     * @param  class-string<\Illuminate\Database\Eloquent\Model>  $modelClass
+     */
+    private function needsDetails(string $modelClass, string $linkedTitle): bool
+    {
+        $slug = $this->makeSlug($linkedTitle, 255);
+        /** @var \Illuminate\Database\Eloquent\Model|null $record */
+        $record = $modelClass::where('name', $linkedTitle)
+            ->orWhere('slug', $slug)
+            ->first();
+
+        if (! $record) {
+            return true;
+        }
+
+        $url = $record->wikipedia_url ?? null;
+
+        return ! is_string($url) || trim((string) $url) === '';
     }
 
     private function parseDate(?string $dateString): ?Carbon

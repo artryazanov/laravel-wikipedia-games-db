@@ -46,6 +46,12 @@ class InfoboxParser
         'Release dates' => 'release_date',
         'Release date(s)' => 'release_date',
         'First release' => 'release_date',
+        'Initial release' => 'release_date',
+
+        // Company specific
+        'Founded' => 'founded',
+        'Website' => 'website_url',
+        'Website(s)' => 'website_url',
     ];
 
     /**
@@ -72,7 +78,16 @@ class InfoboxParser
                 $key = trim($header->text());
                 if (isset(self::FIELD_MAP[$key])) {
                     $internalKey = self::FIELD_MAP[$key];
-                    if ($internalKey === 'cover_image_url') {
+                    if (in_array($internalKey, ['developers', 'publishers', 'platforms', 'engines', 'genres', 'modes', 'series'], true)) {
+                        $targets = $this->extractAnchorTargets($cell);
+                        $links = $this->extractLinks($cell);
+                        if (! empty($targets)) {
+                            $data[$internalKey] = !empty($links) ? $links : $targets;
+                            $data[$internalKey.'_link_titles'] = $targets;
+                        } else {
+                            $data[$internalKey] = !empty($links) ? $links : $this->extractList($cell);
+                        }
+                    } elseif ($internalKey === 'cover_image_url') {
                         $img = $cell->filter('img');
                         if ($img->count() > 0) {
                             $src = $img->attr('src');
@@ -123,6 +138,10 @@ class InfoboxParser
                 return ($links = $this->extractLinks($cell)) ? $links : $this->extractList($cell);
             case 'release_date':
                 return $this->extractDate($cell);
+            case 'founded':
+                return $this->extractYear($cell);
+            case 'website_url':
+                return $this->extractWebsite($cell);
             default:
                 return trim($cell->text());
         }
@@ -217,6 +236,38 @@ class InfoboxParser
     }
 
     /**
+     * Extract target page titles from anchor hrefs or title attributes.
+     * Returns cleaned, human-friendly titles (underscores replaced with spaces).
+     *
+     * @return string[]
+     */
+    private function extractAnchorTargets(Crawler $cell): array
+    {
+        $items = [];
+        $cell->filter('a')->each(function (Crawler $a) use (&$items) {
+            $titleAttr = $a->attr('title');
+            $href = $a->attr('href');
+            $candidate = null;
+            if (is_string($titleAttr) && $titleAttr !== '') {
+                $candidate = $titleAttr;
+            } elseif (is_string($href) && $href !== '') {
+                // Use the last segment after /wiki/
+                if (preg_match('~/(?:wiki|w)/([^#?]+)~i', $href, $m)) {
+                    $candidate = urldecode(str_replace('_', ' ', $m[1]));
+                }
+            }
+            if ($candidate === null) {
+                $candidate = $this->cleanText($a->text());
+            }
+            if ($candidate !== '') {
+                $items[] = trim($candidate);
+            }
+        });
+
+        return array_values(array_unique($items));
+    }
+
+    /**
      * Remove citation markers and trim.
      */
     private function cleanText(string $text): string
@@ -224,5 +275,62 @@ class InfoboxParser
         $text = preg_replace('/\[\d+\]/u', '', $text) ?? $text;
 
         return trim($text);
+    }
+
+    /**
+     * Extract first 4-digit year from the cell text.
+     */
+    private function extractYear(Crawler $cell): ?int
+    {
+        $text = $cell->text();
+        if (preg_match('/(\d{4})/u', $text, $m)) {
+            $year = (int) $m[1];
+            $current = (int) date('Y') + 1;
+            if ($year >= 1800 && $year <= $current) {
+                return $year;
+            }
+
+            return $year; // fallback even if outside range
+        }
+
+        return null;
+    }
+
+    /**
+     * Extract the first website URL from the cell. Prefers external links.
+     */
+    private function extractWebsite(Crawler $cell): ?string
+    {
+        // Prefer first anchor href
+        $a = $cell->filter('a')->first();
+        if ($a->count() > 0) {
+            $href = $a->attr('href');
+            if (is_string($href) && $href !== '') {
+                $href = trim($href);
+                if (str_starts_with($href, '//')) {
+                    return 'https:'.$href;
+                }
+                if (preg_match('~^https?://~i', $href)) {
+                    return $href;
+                }
+                // Ignore internal wiki links like /wiki/...
+                if (str_starts_with($href, '/')) {
+                    // Not an external website URL
+                    return null;
+                }
+            }
+        }
+
+        // Fallback to raw text if it looks like a domain
+        $text = trim($cell->text());
+        if ($text !== '' && preg_match('~([a-z0-9.-]+\.[a-z]{2,})(/\S*)?$~i', $text)) {
+            if (! preg_match('~^https?://~i', $text)) {
+                return 'https://'.$text;
+            }
+
+            return $text;
+        }
+
+        return null;
     }
 }

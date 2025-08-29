@@ -12,7 +12,20 @@ class Company extends Model
 {
     protected $table = 'wikipedia_game_companies';
 
-    protected $fillable = ['name', 'slug'];
+    /**
+     * Mass-assignable attributes for extended company information.
+     */
+    protected $fillable = [
+        'name',
+        'slug',
+        'title',
+        'wikipedia_url',
+        'description',
+        'wikitext',
+        'cover_image_url',
+        'founded',
+        'website_url',
+    ];
 
     /**
      * Games relation (many-to-many via pivot with 'role').
