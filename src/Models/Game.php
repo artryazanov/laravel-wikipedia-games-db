@@ -47,6 +47,12 @@ class Game extends Model
         'release_year',
     ];
 
+    protected $appends = [
+        // Proxy fields moved to related wikipage for convenient serialization/access
+        'title',
+        'wikipedia_url',
+    ];
+
     protected $casts = [
         'release_date' => 'date',
         'release_year' => 'integer',
@@ -122,5 +128,21 @@ class Game extends Model
     public function publishers(): BelongsToMany
     {
         return $this->belongsToMany(Company::class, 'wikipedia_game_game_company')->wherePivot('role', 'publisher');
+    }
+
+    /**
+     * Accessor: proxy title to related wikipage->title
+     */
+    public function getTitleAttribute(): ?string
+    {
+        return $this->wikipage?->title;
+    }
+
+    /**
+     * Accessor: proxy wikipedia_url to related wikipage->wikipedia_url
+     */
+    public function getWikipediaUrlAttribute(): ?string
+    {
+        return $this->wikipage?->wikipedia_url;
     }
 }
