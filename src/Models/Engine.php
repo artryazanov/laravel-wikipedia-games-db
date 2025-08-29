@@ -2,12 +2,31 @@
 
 namespace Artryazanov\WikipediaGamesDb\Models;
 
+use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
- * Engine model representing a game engine taxonomy (e.g., Unreal Engine, Unity).
+ * Artryazanov\\WikipediaGamesDb\\Models\\Engine
+ *
+ * @property int $id
+ * @property string $name Engine name
+ * @property int|null $wikipage_id Reference to the wikipedia_game_wikipages table
+ * @property string|null $cover_image_url Main image URL
+ * @property CarbonInterface|null $release_date Engine initial release date
+ * @property string|null $website_url Official website URL
+ * @property CarbonInterface|null $created_at
+ * @property CarbonInterface|null $updated_at
+ *
+ * @property-read Wikipage|null $wikipage
+ * @property-read Collection<int, Game> $games
+ *
+ * @method static Builder|Engine newModelQuery()
+ * @method static Builder|Engine newQuery()
+ * @method static Builder|Engine query()
  */
 class Engine extends Model
 {
