@@ -15,6 +15,7 @@ use Artryazanov\WikipediaGamesDb\Models\Genre;
 use Artryazanov\WikipediaGamesDb\Models\Mode;
 use Artryazanov\WikipediaGamesDb\Models\Platform;
 use Artryazanov\WikipediaGamesDb\Models\Series;
+use Artryazanov\WikipediaGamesDb\Models\Wikipage;
 use Artryazanov\WikipediaGamesDb\Services\InfoboxParser;
 use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -29,30 +30,30 @@ class ProcessGamePageJobConditionalDispatchSkipTest extends TestCase
     {
         config()->set('game-scraper.throttle_milliseconds', 0);
 
-        // Pre-create records that match link titles and already have wikipedia_url filled
+        // Pre-create records that match link titles and already have wikipage with wikipedia_url
         // Companies
-        Company::create(['name' => 'Id Software', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Id_Software']);
-        Company::create(['name' => 'GT Interactive', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/GT_Interactive']);
+        Company::create(['name' => 'Id Software', 'wikipage_id' => Wikipage::create(['title' => 'Id Software', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Id_Software'])->id]);
+        Company::create(['name' => 'GT Interactive', 'wikipage_id' => Wikipage::create(['title' => 'GT Interactive', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/GT_Interactive'])->id]);
 
         // Platforms
-        Platform::create(['name' => 'Microsoft Windows', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Microsoft_Windows']);
-        Platform::create(['name' => 'PlayStation 5', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/PlayStation_5']);
+        Platform::create(['name' => 'Microsoft Windows', 'wikipage_id' => Wikipage::create(['title' => 'Microsoft Windows', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Microsoft_Windows'])->id]);
+        Platform::create(['name' => 'PlayStation 5', 'wikipage_id' => Wikipage::create(['title' => 'PlayStation 5', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/PlayStation_5'])->id]);
 
         // Engines
-        Engine::create(['name' => 'Unreal Engine', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Unreal_Engine']);
-        Engine::create(['name' => 'Unity (game engine)', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Unity_(game_engine)']);
+        Engine::create(['name' => 'Unreal Engine', 'wikipage_id' => Wikipage::create(['title' => 'Unreal Engine', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Unreal_Engine'])->id]);
+        Engine::create(['name' => 'Unity (game engine)', 'wikipage_id' => Wikipage::create(['title' => 'Unity (game engine)', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Unity_(game_engine)'])->id]);
 
         // Genres
-        Genre::create(['name' => 'Shooter (video games)', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Shooter_(video_games)']);
-        Genre::create(['name' => 'Role-playing video game', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Role-playing_video_game']);
+        Genre::create(['name' => 'Shooter (video games)', 'wikipage_id' => Wikipage::create(['title' => 'Shooter (video games)', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Shooter_(video_games)'])->id]);
+        Genre::create(['name' => 'Role-playing video game', 'wikipage_id' => Wikipage::create(['title' => 'Role-playing video game', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Role-playing_video_game'])->id]);
 
         // Modes
-        Mode::create(['name' => 'Single-player video game', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Single-player_video_game']);
-        Mode::create(['name' => 'Multiplayer video game', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Multiplayer_video_game']);
+        Mode::create(['name' => 'Single-player video game', 'wikipage_id' => Wikipage::create(['title' => 'Single-player video game', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Single-player_video_game'])->id]);
+        Mode::create(['name' => 'Multiplayer video game', 'wikipage_id' => Wikipage::create(['title' => 'Multiplayer video game', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Multiplayer_video_game'])->id]);
 
         // Series
-        Series::create(['name' => 'The Legend of Zelda', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/The_Legend_of_Zelda']);
-        Series::create(['name' => 'Mario (franchise)', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Mario_(franchise)']);
+        Series::create(['name' => 'The Legend of Zelda', 'wikipage_id' => Wikipage::create(['title' => 'The Legend of Zelda', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/The_Legend_of_Zelda'])->id]);
+        Series::create(['name' => 'Mario (franchise)', 'wikipage_id' => Wikipage::create(['title' => 'Mario (franchise)', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Mario_(franchise)'])->id]);
 
         $title = 'Game With Links Already Known';
         $html = '<html></html>';

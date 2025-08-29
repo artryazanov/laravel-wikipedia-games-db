@@ -3,6 +3,7 @@
 namespace Artryazanov\WikipediaGamesDb\Jobs;
 
 use Artryazanov\WikipediaGamesDb\Models\Platform;
+use Artryazanov\WikipediaGamesDb\Models\Wikipage;
 use Artryazanov\WikipediaGamesDb\Services\InfoboxParser;
 use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
 use Carbon\Carbon;
@@ -73,24 +74,37 @@ class ProcessPlatformPageJob extends AbstractWikipediaJob implements ShouldBeUni
         $wikipediaUrl = 'https://en.wikipedia.org/wiki/'.str_replace(' ', '_', $this->pageTitle);
 
         DB::transaction(function () use ($data, $leadDescription, $wikitext, $wikipediaUrl) {
-            // Try to find an existing platform by name or wikipedia_url
-            $platform = Platform::where('name', $this->pageTitle)
-                ->orWhere('wikipedia_url', $wikipediaUrl)
+            // Upsert Wikipage
+            $wikipage = Wikipage::where('wikipedia_url', $wikipediaUrl)
+                ->orWhere('title', $this->pageTitle)
                 ->first();
 
-            $payload = [
+            $wikipagePayload = [
                 'title' => $this->pageTitle,
                 'wikipedia_url' => $wikipediaUrl,
                 'description' => $leadDescription ?? null,
                 'wikitext' => $wikitext,
+            ];
+            if ($wikipage) {
+                $wikipage->fill($wikipagePayload)->save();
+            } else {
+                $wikipage = Wikipage::create($wikipagePayload);
+            }
+
+            // Upsert Platform by name or attached wikipage
+            $platform = Platform::where('name', $this->pageTitle)
+                ->orWhere('wikipage_id', $wikipage->id)
+                ->first();
+
+            $payload = [
+                'wikipage_id' => $wikipage->id,
                 'cover_image_url' => $data['cover_image_url'] ?? null,
                 'release_date' => $this->parseDate($data['release_date'] ?? null)?->toDateString(),
                 'website_url' => $data['website_url'] ?? null,
             ];
 
             if ($platform) {
-                $platform->fill($payload);
-                $platform->save();
+                $platform->fill($payload)->save();
             } else {
                 $platform = Platform::create(array_merge([
                     'name' => $this->pageTitle,

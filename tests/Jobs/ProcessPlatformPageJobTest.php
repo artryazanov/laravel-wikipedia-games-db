@@ -4,6 +4,7 @@ namespace Tests\Jobs;
 
 use Artryazanov\WikipediaGamesDb\Jobs\ProcessPlatformPageJob;
 use Artryazanov\WikipediaGamesDb\Models\Platform;
+use Artryazanov\WikipediaGamesDb\Models\Wikipage;
 use Artryazanov\WikipediaGamesDb\Services\InfoboxParser;
 use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -36,12 +37,12 @@ class ProcessPlatformPageJobTest extends TestCase
 
         (new ProcessPlatformPageJob($title))->handle($client, $parser);
 
-        $platform = Platform::first();
+        $platform = Platform::with('wikipage')->first();
         $this->assertNotNull($platform);
-        $this->assertSame($title, $platform->title);
-        $this->assertSame('https://en.wikipedia.org/wiki/PlayStation_5', $platform->wikipedia_url);
-        $this->assertSame('Sony home video game console', $platform->description);
-        $this->assertSame('platform wikitext', $platform->wikitext);
+        $this->assertSame($title, $platform->wikipage->title);
+        $this->assertSame('https://en.wikipedia.org/wiki/PlayStation_5', $platform->wikipage->wikipedia_url);
+        $this->assertSame('Sony home video game console', $platform->wikipage->description);
+        $this->assertSame('platform wikitext', $platform->wikipage->wikitext);
         $this->assertSame('https://img/ps5.jpg', $platform->cover_image_url);
         $this->assertSame('2020-11-12', $platform->release_date?->toDateString());
         $this->assertSame('https://www.playstation.com/ps5/', $platform->website_url);
@@ -82,8 +83,12 @@ class ProcessPlatformPageJobTest extends TestCase
         $title = 'Xbox Series X';
         $html = '<html></html>';
 
-        // Pre-create platform with different name but matching wikipedia_url
-        Platform::create(['name' => 'Xbox Series X Console', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Xbox_Series_X']);
+        // Pre-create platform with different name but matching wikipedia_url via wikipage
+        $wpId = Wikipage::create([
+            'title' => 'Xbox Series X',
+            'wikipedia_url' => 'https://en.wikipedia.org/wiki/Xbox_Series_X',
+        ])->id;
+        Platform::create(['name' => 'Xbox Series X Console', 'wikipage_id' => $wpId]);
 
         $client = $this->mock(MediaWikiClient::class, function ($mock) use ($title, $html) {
             $mock->shouldReceive('getPageHtml')->once()->with($title)->andReturn($html);
@@ -103,7 +108,7 @@ class ProcessPlatformPageJobTest extends TestCase
 
         $this->assertSame(1, Platform::count());
         $platform = Platform::first();
-        $this->assertSame('Updated desc', $platform->description);
-        $this->assertSame('Xbox Series X', $platform->title);
+        $this->assertSame('Updated desc', $platform->wikipage->description);
+        $this->assertSame('Xbox Series X', $platform->wikipage->title);
     }
 }

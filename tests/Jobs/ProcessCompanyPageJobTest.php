@@ -36,12 +36,12 @@ class ProcessCompanyPageJobTest extends TestCase
 
         (new ProcessCompanyPageJob($title))->handle($client, $parser);
 
-        $company = Company::first();
+        $company = Company::with('wikipage')->first();
         $this->assertNotNull($company);
-        $this->assertSame($title, $company->title);
-        $this->assertSame('https://en.wikipedia.org/wiki/Id_Software', $company->wikipedia_url);
-        $this->assertSame('American video game developer', $company->description);
-        $this->assertSame('company wikitext', $company->wikitext);
+        $this->assertSame($title, $company->wikipage->title);
+        $this->assertSame('https://en.wikipedia.org/wiki/Id_Software', $company->wikipage->wikipedia_url);
+        $this->assertSame('American video game developer', $company->wikipage->description);
+        $this->assertSame('company wikitext', $company->wikipage->wikitext);
         $this->assertSame('https://img/logo.jpg', $company->cover_image_url);
         $this->assertSame(1991, (int) $company->founded);
         $this->assertSame('https://www.idsoftware.com', $company->website_url);
@@ -82,8 +82,12 @@ class ProcessCompanyPageJobTest extends TestCase
         $title = 'Id Software';
         $html = '<html></html>';
 
-        // Pre-create company with different name but matching wikipedia_url
-        Company::create(['name' => 'Id Software, Inc.', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Id_Software']);
+        // Pre-create company with different name but matching wikipedia_url via wikipage
+        $wpId = \Artryazanov\WikipediaGamesDb\Models\Wikipage::create([
+            'title' => 'Id Software',
+            'wikipedia_url' => 'https://en.wikipedia.org/wiki/Id_Software',
+        ])->id;
+        Company::create(['name' => 'Id Software, Inc.', 'wikipage_id' => $wpId]);
 
         $client = $this->mock(MediaWikiClient::class, function ($mock) use ($title, $html) {
             $mock->shouldReceive('getPageHtml')->once()->with($title)->andReturn($html);
@@ -103,7 +107,7 @@ class ProcessCompanyPageJobTest extends TestCase
 
         $this->assertSame(1, Company::count());
         $company = Company::first();
-        $this->assertSame('Updated description', $company->description);
-        $this->assertSame('Id Software', $company->title);
+        $this->assertSame('Updated description', $company->wikipage->description);
+        $this->assertSame('Id Software', $company->wikipage->title);
     }
 }

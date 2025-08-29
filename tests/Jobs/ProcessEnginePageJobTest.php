@@ -4,6 +4,7 @@ namespace Tests\Jobs;
 
 use Artryazanov\WikipediaGamesDb\Jobs\ProcessEnginePageJob;
 use Artryazanov\WikipediaGamesDb\Models\Engine;
+use Artryazanov\WikipediaGamesDb\Models\Wikipage;
 use Artryazanov\WikipediaGamesDb\Services\InfoboxParser;
 use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -36,12 +37,12 @@ class ProcessEnginePageJobTest extends TestCase
 
         (new ProcessEnginePageJob($title))->handle($client, $parser);
 
-        $engine = Engine::first();
+        $engine = Engine::with('wikipage')->first();
         $this->assertNotNull($engine);
-        $this->assertSame($title, $engine->title);
-        $this->assertSame('https://en.wikipedia.org/wiki/Unreal_Engine_3', $engine->wikipedia_url);
-        $this->assertSame('Epic Games engine', $engine->description);
-        $this->assertSame('engine wikitext', $engine->wikitext);
+        $this->assertSame($title, $engine->wikipage->title);
+        $this->assertSame('https://en.wikipedia.org/wiki/Unreal_Engine_3', $engine->wikipage->wikipedia_url);
+        $this->assertSame('Epic Games engine', $engine->wikipage->description);
+        $this->assertSame('engine wikitext', $engine->wikipage->wikitext);
         $this->assertSame('https://img/engine.jpg', $engine->cover_image_url);
         $this->assertSame('2005-06-01', $engine->release_date?->toDateString());
         $this->assertSame('https://www.unrealengine.com', $engine->website_url);
@@ -81,8 +82,12 @@ class ProcessEnginePageJobTest extends TestCase
         $title = 'Unreal Engine 3';
         $html = '<html></html>';
 
-        // Pre-create engine with different name but matching wikipedia_url
-        Engine::create(['name' => 'UE3', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Unreal_Engine_3']);
+        // Pre-create engine with different name but matching wikipedia_url via wikipage
+        $wpId = Wikipage::create([
+            'title' => 'Unreal Engine 3',
+            'wikipedia_url' => 'https://en.wikipedia.org/wiki/Unreal_Engine_3',
+        ])->id;
+        Engine::create(['name' => 'UE3', 'wikipage_id' => $wpId]);
 
         $client = $this->mock(MediaWikiClient::class, function ($mock) use ($title, $html) {
             $mock->shouldReceive('getPageHtml')->once()->with($title)->andReturn($html);
@@ -102,7 +107,7 @@ class ProcessEnginePageJobTest extends TestCase
 
         $this->assertSame(1, Engine::count());
         $engine = Engine::first();
-        $this->assertSame('Updated engine desc', $engine->description);
-        $this->assertSame('Unreal Engine 3', $engine->title);
+        $this->assertSame('Updated engine desc', $engine->wikipage->description);
+        $this->assertSame('Unreal Engine 3', $engine->wikipage->title);
     }
 }

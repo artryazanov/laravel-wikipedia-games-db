@@ -4,6 +4,7 @@ namespace Tests\Jobs;
 
 use Artryazanov\WikipediaGamesDb\Jobs\ProcessSeriesPageJob;
 use Artryazanov\WikipediaGamesDb\Models\Series;
+use Artryazanov\WikipediaGamesDb\Models\Wikipage;
 use Artryazanov\WikipediaGamesDb\Services\InfoboxParser;
 use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -32,12 +33,12 @@ class ProcessSeriesPageJobTest extends TestCase
 
         (new ProcessSeriesPageJob($title))->handle($client, $parser);
 
-        $series = Series::first();
+        $series = Series::with('wikipage')->first();
         $this->assertNotNull($series);
-        $this->assertSame($title, $series->title);
-        $this->assertSame('https://en.wikipedia.org/wiki/The_Legend_of_Zelda', $series->wikipedia_url);
-        $this->assertSame('Nintendo action-adventure franchise', $series->description);
-        $this->assertSame('series wikitext', $series->wikitext);
+        $this->assertSame($title, $series->wikipage->title);
+        $this->assertSame('https://en.wikipedia.org/wiki/The_Legend_of_Zelda', $series->wikipage->wikipedia_url);
+        $this->assertSame('Nintendo action-adventure franchise', $series->wikipage->description);
+        $this->assertSame('series wikitext', $series->wikipage->wikitext);
         $this->assertSame('The Legend of Zelda', $series->name);
     }
 
@@ -47,8 +48,12 @@ class ProcessSeriesPageJobTest extends TestCase
         $title = 'Mario (franchise)';
         $html = '<html></html>';
 
-        // Pre-create series with different name but matching wikipedia_url derived from title
-        Series::create(['name' => 'Mario', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Mario_(franchise)']);
+        // Pre-create series with different name but matching wikipedia_url via wikipage
+        $wpId = Wikipage::create([
+            'title' => 'Mario (franchise)',
+            'wikipedia_url' => 'https://en.wikipedia.org/wiki/Mario_(franchise)'
+        ])->id;
+        Series::create(['name' => 'Mario', 'wikipage_id' => $wpId]);
 
         $client = $this->mock(MediaWikiClient::class, function ($mock) use ($title, $html) {
             $mock->shouldReceive('getPageHtml')->once()->with($title)->andReturn($html);
@@ -64,7 +69,7 @@ class ProcessSeriesPageJobTest extends TestCase
 
         $this->assertSame(1, Series::count());
         $series = Series::first();
-        $this->assertSame('Updated series desc', $series->description);
-        $this->assertSame('Mario (franchise)', $series->title);
+        $this->assertSame('Updated series desc', $series->wikipage->description);
+        $this->assertSame('Mario (franchise)', $series->wikipage->title);
     }
 }

@@ -3,6 +3,7 @@
 namespace Artryazanov\WikipediaGamesDb\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
@@ -17,10 +18,7 @@ class Platform extends Model
      */
     protected $fillable = [
         'name',
-        'title',
-        'wikipedia_url',
-        'description',
-        'wikitext',
+        'wikipage_id',
         'cover_image_url',
         'release_date',
         'website_url',
@@ -29,6 +27,11 @@ class Platform extends Model
     protected $casts = [
         'release_date' => 'date',
     ];
+
+    public function wikipage(): BelongsTo
+    {
+        return $this->belongsTo(Wikipage::class);
+    }
 
     /**
      * Games relation (many-to-many via pivot table).

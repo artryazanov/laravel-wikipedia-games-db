@@ -3,6 +3,7 @@
 namespace Artryazanov\WikipediaGamesDb\Jobs;
 
 use Artryazanov\WikipediaGamesDb\Models\Series;
+use Artryazanov\WikipediaGamesDb\Models\Wikipage;
 use Artryazanov\WikipediaGamesDb\Services\InfoboxParser;
 use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -61,21 +62,34 @@ class ProcessSeriesPageJob extends AbstractWikipediaJob implements ShouldBeUniqu
         $wikipediaUrl = 'https://en.wikipedia.org/wiki/'.str_replace(' ', '_', $this->pageTitle);
 
         DB::transaction(function () use ($leadDescription, $wikitext, $wikipediaUrl) {
-            // Try to find an existing series by name or wikipedia_url
-            $series = Series::where('name', $this->pageTitle)
-                ->orWhere('wikipedia_url', $wikipediaUrl)
+            // Upsert Wikipage
+            $wikipage = Wikipage::where('wikipedia_url', $wikipediaUrl)
+                ->orWhere('title', $this->pageTitle)
                 ->first();
 
-            $payload = [
+            $wikipagePayload = [
                 'title' => $this->pageTitle,
                 'wikipedia_url' => $wikipediaUrl,
                 'description' => $leadDescription ?? null,
                 'wikitext' => $wikitext,
             ];
+            if ($wikipage) {
+                $wikipage->fill($wikipagePayload)->save();
+            } else {
+                $wikipage = Wikipage::create($wikipagePayload);
+            }
+
+            // Upsert Series by name or attached wikipage
+            $series = Series::where('name', $this->pageTitle)
+                ->orWhere('wikipage_id', $wikipage->id)
+                ->first();
+
+            $payload = [
+                'wikipage_id' => $wikipage->id,
+            ];
 
             if ($series) {
-                $series->fill($payload);
-                $series->save();
+                $series->fill($payload)->save();
             } else {
                 $series = Series::create(array_merge([
                     'name' => $this->pageTitle,

@@ -3,6 +3,7 @@
 namespace Artryazanov\WikipediaGamesDb\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
@@ -17,14 +18,16 @@ class Company extends Model
      */
     protected $fillable = [
         'name',
-        'title',
-        'wikipedia_url',
-        'description',
-        'wikitext',
+        'wikipage_id',
         'cover_image_url',
         'founded',
         'website_url',
     ];
+
+    public function wikipage(): BelongsTo
+    {
+        return $this->belongsTo(Wikipage::class);
+    }
 
     /**
      * Games relation (many-to-many via pivot with 'role').

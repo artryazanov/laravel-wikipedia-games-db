@@ -3,6 +3,7 @@
 namespace Artryazanov\WikipediaGamesDb\Jobs;
 
 use Artryazanov\WikipediaGamesDb\Models\Company;
+use Artryazanov\WikipediaGamesDb\Models\Wikipage;
 use Artryazanov\WikipediaGamesDb\Services\InfoboxParser;
 use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -71,24 +72,37 @@ class ProcessCompanyPageJob extends AbstractWikipediaJob implements ShouldBeUniq
         $wikipediaUrl = 'https://en.wikipedia.org/wiki/'.str_replace(' ', '_', $this->pageTitle);
 
         DB::transaction(function () use ($data, $leadDescription, $wikitext, $wikipediaUrl) {
-            // Try to find an existing company by name or wikipedia_url
-            $company = Company::where('name', $this->pageTitle)
-                ->orWhere('wikipedia_url', $wikipediaUrl)
+            // Upsert Wikipage
+            $wikipage = Wikipage::where('wikipedia_url', $wikipediaUrl)
+                ->orWhere('title', $this->pageTitle)
                 ->first();
 
-            $payload = [
+            $wikipagePayload = [
                 'title' => $this->pageTitle,
                 'wikipedia_url' => $wikipediaUrl,
                 'description' => $leadDescription ?? null,
                 'wikitext' => $wikitext,
+            ];
+            if ($wikipage) {
+                $wikipage->fill($wikipagePayload)->save();
+            } else {
+                $wikipage = Wikipage::create($wikipagePayload);
+            }
+
+            // Upsert Company by name or attached wikipage
+            $company = Company::where('name', $this->pageTitle)
+                ->orWhere('wikipage_id', $wikipage->id)
+                ->first();
+
+            $payload = [
+                'wikipage_id' => $wikipage->id,
                 'cover_image_url' => $data['cover_image_url'] ?? null,
                 'founded' => isset($data['founded']) && is_scalar($data['founded']) ? (int) $data['founded'] : null,
                 'website_url' => $data['website_url'] ?? null,
             ];
 
             if ($company) {
-                $company->fill($payload);
-                $company->save();
+                $company->fill($payload)->save();
             } else {
                 $company = Company::create(array_merge([
                     'name' => $this->pageTitle,

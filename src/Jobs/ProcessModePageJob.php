@@ -3,6 +3,7 @@
 namespace Artryazanov\WikipediaGamesDb\Jobs;
 
 use Artryazanov\WikipediaGamesDb\Models\Mode;
+use Artryazanov\WikipediaGamesDb\Models\Wikipage;
 use Artryazanov\WikipediaGamesDb\Services\InfoboxParser;
 use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -61,21 +62,34 @@ class ProcessModePageJob extends AbstractWikipediaJob implements ShouldBeUnique
         $wikipediaUrl = 'https://en.wikipedia.org/wiki/'.str_replace(' ', '_', $this->pageTitle);
 
         DB::transaction(function () use ($leadDescription, $wikitext, $wikipediaUrl) {
-            // Find an existing mode by name or wikipedia_url
-            $mode = Mode::where('name', $this->pageTitle)
-                ->orWhere('wikipedia_url', $wikipediaUrl)
+            // Upsert Wikipage
+            $wikipage = Wikipage::where('wikipedia_url', $wikipediaUrl)
+                ->orWhere('title', $this->pageTitle)
                 ->first();
 
-            $payload = [
+            $wikipagePayload = [
                 'title' => $this->pageTitle,
                 'wikipedia_url' => $wikipediaUrl,
                 'description' => $leadDescription ?? null,
                 'wikitext' => $wikitext,
             ];
+            if ($wikipage) {
+                $wikipage->fill($wikipagePayload)->save();
+            } else {
+                $wikipage = Wikipage::create($wikipagePayload);
+            }
+
+            // Upsert Mode by name or attached wikipage
+            $mode = Mode::where('name', $this->pageTitle)
+                ->orWhere('wikipage_id', $wikipage->id)
+                ->first();
+
+            $payload = [
+                'wikipage_id' => $wikipage->id,
+            ];
 
             if ($mode) {
-                $mode->fill($payload);
-                $mode->save();
+                $mode->fill($payload)->save();
             } else {
                 $mode = Mode::create(array_merge([
                     'name' => $this->pageTitle,

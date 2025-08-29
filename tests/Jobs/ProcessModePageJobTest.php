@@ -4,6 +4,7 @@ namespace Tests\Jobs;
 
 use Artryazanov\WikipediaGamesDb\Jobs\ProcessModePageJob;
 use Artryazanov\WikipediaGamesDb\Models\Mode;
+use Artryazanov\WikipediaGamesDb\Models\Wikipage;
 use Artryazanov\WikipediaGamesDb\Services\InfoboxParser;
 use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -32,12 +33,12 @@ class ProcessModePageJobTest extends TestCase
 
         (new ProcessModePageJob($title))->handle($client, $parser);
 
-        $mode = Mode::first();
+        $mode = Mode::with('wikipage')->first();
         $this->assertNotNull($mode);
-        $this->assertSame($title, $mode->title);
-        $this->assertSame('https://en.wikipedia.org/wiki/Single-player_video_game', $mode->wikipedia_url);
-        $this->assertSame('Mode lead description', $mode->description);
-        $this->assertSame('mode wikitext', $mode->wikitext);
+        $this->assertSame($title, $mode->wikipage->title);
+        $this->assertSame('https://en.wikipedia.org/wiki/Single-player_video_game', $mode->wikipage->wikipedia_url);
+        $this->assertSame('Mode lead description', $mode->wikipage->description);
+        $this->assertSame('mode wikitext', $mode->wikipage->wikitext);
         $this->assertSame('Single-player video game', $mode->name);
     }
 
@@ -47,8 +48,12 @@ class ProcessModePageJobTest extends TestCase
         $title = 'Single-player video game';
         $html = '<html></html>';
 
-        // Pre-create mode with different name but matching wikipedia_url derived from title
-        Mode::create(['name' => 'Single player', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Single-player_video_game']);
+        // Pre-create mode with different name but matching wikipedia_url via wikipage
+        $wpId = Wikipage::create([
+            'title' => 'Single-player video game',
+            'wikipedia_url' => 'https://en.wikipedia.org/wiki/Single-player_video_game'
+        ])->id;
+        Mode::create(['name' => 'Single player', 'wikipage_id' => $wpId]);
 
         $client = $this->mock(MediaWikiClient::class, function ($mock) use ($title, $html) {
             $mock->shouldReceive('getPageHtml')->once()->with($title)->andReturn($html);
@@ -64,7 +69,7 @@ class ProcessModePageJobTest extends TestCase
 
         $this->assertSame(1, Mode::count());
         $mode = Mode::first();
-        $this->assertSame('Updated mode desc', $mode->description);
-        $this->assertSame('Single-player video game', $mode->title);
+        $this->assertSame('Updated mode desc', $mode->wikipage->description);
+        $this->assertSame('Single-player video game', $mode->wikipage->title);
     }
 }

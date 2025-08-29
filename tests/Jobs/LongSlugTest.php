@@ -39,9 +39,9 @@ class LongSlugTest extends TestCase
 
         (new ProcessGamePageJob($title))->handle($client, $parser);
 
-        $game = Game::first();
+        $game = Game::with('wikipage')->first();
         $this->assertNotNull($game);
-        $this->assertSame('Lead', $game->description);
+        $this->assertSame('Lead', $game->wikipage->description);
         // Ensure the related genre record exists and queryable via relationship
         $this->assertSame(1, $game->genres()->count());
     }

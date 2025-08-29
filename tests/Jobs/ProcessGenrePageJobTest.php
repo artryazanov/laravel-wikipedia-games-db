@@ -4,6 +4,7 @@ namespace Tests\Jobs;
 
 use Artryazanov\WikipediaGamesDb\Jobs\ProcessGenrePageJob;
 use Artryazanov\WikipediaGamesDb\Models\Genre;
+use Artryazanov\WikipediaGamesDb\Models\Wikipage;
 use Artryazanov\WikipediaGamesDb\Services\InfoboxParser;
 use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -34,12 +35,12 @@ class ProcessGenrePageJobTest extends TestCase
 
         (new ProcessGenrePageJob($title))->handle($client, $parser);
 
-        $genre = Genre::first();
+        $genre = Genre::with('wikipage')->first();
         $this->assertNotNull($genre);
-        $this->assertSame($title, $genre->title);
-        $this->assertSame('https://en.wikipedia.org/wiki/Shooter_(video_games)', $genre->wikipedia_url);
-        $this->assertSame('Genre lead description', $genre->description);
-        $this->assertSame('genre wikitext', $genre->wikitext);
+        $this->assertSame($title, $genre->wikipage->title);
+        $this->assertSame('https://en.wikipedia.org/wiki/Shooter_(video_games)', $genre->wikipage->wikipedia_url);
+        $this->assertSame('Genre lead description', $genre->wikipage->description);
+        $this->assertSame('genre wikitext', $genre->wikipage->wikitext);
         $this->assertSame('Shooter (video games)', $genre->name);
     }
 
@@ -49,8 +50,12 @@ class ProcessGenrePageJobTest extends TestCase
         $title = 'Shooter (video games)';
         $html = '<html></html>';
 
-        // Pre-create genre with different name but matching wikipedia_url derived from title
-        Genre::create(['name' => 'Shooter', 'wikipedia_url' => 'https://en.wikipedia.org/wiki/Shooter_(video_games)']);
+        // Pre-create genre with different name but matching wikipedia_url via wikipage
+        $wpId = Wikipage::create([
+            'title' => 'Shooter (video games)',
+            'wikipedia_url' => 'https://en.wikipedia.org/wiki/Shooter_(video_games)'
+        ])->id;
+        Genre::create(['name' => 'Shooter', 'wikipage_id' => $wpId]);
 
         $client = $this->mock(MediaWikiClient::class, function ($mock) use ($title, $html) {
             $mock->shouldReceive('getPageHtml')->once()->with($title)->andReturn($html);
@@ -66,7 +71,7 @@ class ProcessGenrePageJobTest extends TestCase
 
         $this->assertSame(1, Genre::count());
         $genre = Genre::first();
-        $this->assertSame('Updated genre desc', $genre->description);
-        $this->assertSame('Shooter (video games)', $genre->title);
+        $this->assertSame('Updated genre desc', $genre->wikipage->description);
+        $this->assertSame('Shooter (video games)', $genre->wikipage->title);
     }
 }

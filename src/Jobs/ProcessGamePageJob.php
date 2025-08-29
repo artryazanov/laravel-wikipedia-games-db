@@ -9,6 +9,7 @@ use Artryazanov\WikipediaGamesDb\Models\Genre;
 use Artryazanov\WikipediaGamesDb\Models\Mode;
 use Artryazanov\WikipediaGamesDb\Models\Platform;
 use Artryazanov\WikipediaGamesDb\Models\Series;
+use Artryazanov\WikipediaGamesDb\Models\Wikipage;
 use Artryazanov\WikipediaGamesDb\Services\InfoboxParser;
 use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
 use Carbon\Carbon;
@@ -132,22 +133,36 @@ class ProcessGamePageJob extends AbstractWikipediaJob implements ShouldBeUnique
             // Build wikipedia_url from title
             $wikipediaUrl = 'https://en.wikipedia.org/wiki/'.str_replace(' ', '_', $this->pageTitle);
 
-            // Upsert game by title
-            $game = Game::where('title', $this->pageTitle)->first();
-            $payload = [
+            // Upsert Wikipage by URL (preferred) or title
+            $wikipage = Wikipage::where('wikipedia_url', $wikipediaUrl)
+                ->orWhere('title', $this->pageTitle)
+                ->first();
+
+            $wikipagePayload = [
                 'title' => $this->pageTitle,
-                'clean_title' => $cleanTitle,
                 'wikipedia_url' => $wikipediaUrl,
                 'description' => $leadDescription ?? ($data['description'] ?? null),
                 'wikitext' => $wikitext,
+            ];
+
+            if ($wikipage) {
+                $wikipage->fill($wikipagePayload)->save();
+            } else {
+                $wikipage = Wikipage::create($wikipagePayload);
+            }
+
+            // Upsert game by attached wikipage
+            $game = Game::where('wikipage_id', $wikipage->id)->first();
+            $payload = [
+                'wikipage_id' => $wikipage->id,
+                'clean_title' => $cleanTitle,
                 'cover_image_url' => $data['cover_image_url'] ?? null,
                 'release_date' => $this->parseDate($data['release_date'] ?? null)?->toDateString(),
                 'release_year' => $releaseYear,
             ];
 
             if ($game) {
-                $game->fill($payload);
-                $game->save();
+                $game->fill($payload)->save();
             } else {
                 $game = Game::create($payload);
             }
@@ -263,7 +278,7 @@ class ProcessGamePageJob extends AbstractWikipediaJob implements ShouldBeUnique
             return true;
         }
 
-        $url = $record->wikipedia_url ?? null;
+        $url = optional($record->wikipage)->wikipedia_url ?? null;
 
         return ! is_string($url) || trim((string) $url) === '';
     }

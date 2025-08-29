@@ -70,15 +70,16 @@ WIKIPEDIA_GAMES_DB_QUEUE_NAME=default
 Please set a meaningful User-Agent per MediaWiki API etiquette.
 
 ## Database schema
-This package ships a single consolidated migration that creates the following tables (with comments):
+This package ships migrations that create the following tables (with comments):
 
-- `wikipedia_games` (core games)
-- `wikipedia_game_genres`
-- `wikipedia_game_platforms`
-- `wikipedia_game_companies`
-- `wikipedia_game_modes`
-- `wikipedia_game_series`
-- `wikipedia_game_engines`
+- `wikipedia_game_wikipages`: central storage for Wikipedia page meta reused by multiple entities. Columns: `title`, `wikipedia_url`, `description`, `wikitext`, timestamps.
+- `wikipedia_games` (core games) — now has `wikipage_id` pointing to `wikipedia_game_wikipages`; still stores `clean_title`, `cover_image_url`, `release_date`, `release_year`.
+- `wikipedia_game_genres` — has `wikipage_id`.
+- `wikipedia_game_platforms` — has `wikipage_id` and keeps platform-specific fields like `cover_image_url`, `release_date`, `website_url`.
+- `wikipedia_game_companies` — has `wikipage_id` and keeps `cover_image_url`, `founded`, `website_url`.
+- `wikipedia_game_modes` — has `wikipage_id`.
+- `wikipedia_game_series` — has `wikipage_id`.
+- `wikipedia_game_engines` — has `wikipage_id` and keeps `cover_image_url`, `release_date`, `website_url`.
 - `wikipedia_game_game_genre` (pivot)
 - `wikipedia_game_game_platform` (pivot)
 - `wikipedia_game_game_mode` (pivot)
@@ -86,7 +87,7 @@ This package ships a single consolidated migration that creates the following ta
 - `wikipedia_game_game_engine` (pivot)
 - `wikipedia_game_game_company` (pivot, with `role` column: developer|publisher)
 
-The migration checks for existence prior to creation, making it safer for incremental adoption.
+The migrations check for existence prior to creation, making it safer for incremental adoption. A data migration backfills `wikipage_id` and moves `title`, `wikipedia_url`, `description`, `wikitext` into `wikipedia_game_wikipages`.
 
 ## Usage
 1) Start the scraping by dispatching the initial category job through the console command:
@@ -126,16 +127,16 @@ protected function schedule(\Illuminate\Console\Scheduling\Schedule $schedule): 
 ## Background jobs & conditional dispatch
 This package processes pages via queued jobs. The main entry point parses a game page and conditionally enqueues per-taxonomy jobs for additional details.
 
-- ProcessGamePageJob: Parses a game page, persists core fields, and dispatches taxonomy jobs for linked items found in the infobox (developers, publishers, platforms, engines, genres, modes, series).
-- ProcessCompanyPageJob: Persists extended company metadata (title, wikipedia_url, description, wikitext, cover_image_url, founded year, website_url).
-- ProcessPlatformPageJob: Persists extended platform metadata (title, wikipedia_url, description, wikitext, cover_image_url, release_date, website_url).
-- ProcessEnginePageJob: Persists extended engine metadata (title, wikipedia_url, description, wikitext, cover_image_url, release_date, website_url).
-- ProcessGenrePageJob: Persists extended genre metadata (title, wikipedia_url, description, wikitext).
-- ProcessModePageJob: Persists extended mode metadata (title, wikipedia_url, description, wikitext).
-- ProcessSeriesPageJob: Persists extended series metadata (title, wikipedia_url, description, wikitext).
+- ProcessGamePageJob: Parses a game page, upserts a central `Wikipage`, persists game-specific fields, and dispatches taxonomy jobs for linked items found in the infobox (developers, publishers, platforms, engines, genres, modes, series).
+- ProcessCompanyPageJob: Upserts `Wikipage` and persists company-specific fields (`cover_image_url`, `founded`, `website_url`).
+- ProcessPlatformPageJob: Upserts `Wikipage` and persists platform-specific fields (`cover_image_url`, `release_date`, `website_url`).
+- ProcessEnginePageJob: Upserts `Wikipage` and persists engine-specific fields (`cover_image_url`, `release_date`, `website_url`).
+- ProcessGenrePageJob: Upserts `Wikipage` and links the genre.
+- ProcessModePageJob: Upserts `Wikipage` and links the mode.
+- ProcessSeriesPageJob: Upserts `Wikipage` and links the series.
 
 Conditional dispatch
-- ProcessGamePageJob will only enqueue a Process*PageJob when the corresponding record is missing or when its wikipedia_url is empty.
+- ProcessGamePageJob will only enqueue a Process*PageJob when the corresponding record is missing or when its linked `wikipage.wikipedia_url` is empty.
 - This minimizes redundant requests and focuses fetching on missing details.
 
 Throttling and uniqueness

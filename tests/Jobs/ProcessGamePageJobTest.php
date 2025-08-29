@@ -47,13 +47,13 @@ class ProcessGamePageJobTest extends TestCase
         // Execute job
         (new ProcessGamePageJob($title))->handle($client, $parser);
 
-        $game = Game::first();
+        $game = Game::with('wikipage')->first();
         $this->assertNotNull($game);
-        $this->assertSame($title, $game->title);
+        $this->assertSame($title, $game->wikipage->title);
         $this->assertSame('Doom', $game->clean_title);
-        $this->assertSame('https://en.wikipedia.org/wiki/Doom_(1993_video_game)', $game->wikipedia_url);
-        $this->assertSame('Lead desc', $game->description); // lead has priority
-        $this->assertSame('wikitext sample', $game->wikitext);
+        $this->assertSame('https://en.wikipedia.org/wiki/Doom_(1993_video_game)', $game->wikipage->wikipedia_url);
+        $this->assertSame('Lead desc', $game->wikipage->description); // lead has priority
+        $this->assertSame('wikitext sample', $game->wikipage->wikitext);
         $this->assertSame('https://img/cover.jpg', $game->cover_image_url);
         $this->assertSame('1993-12-10', $game->release_date->toDateString());
         $this->assertSame(1993, $game->release_year);
