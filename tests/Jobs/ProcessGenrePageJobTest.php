@@ -53,7 +53,7 @@ class ProcessGenrePageJobTest extends TestCase
         // Pre-create genre with different name but matching wikipedia_url via wikipage
         $wpId = Wikipage::create([
             'title' => 'Shooter (video games)',
-            'wikipedia_url' => 'https://en.wikipedia.org/wiki/Shooter_(video_games)'
+            'wikipedia_url' => 'https://en.wikipedia.org/wiki/Shooter_(video_games)',
         ])->id;
         Genre::create(['name' => 'Shooter', 'wikipage_id' => $wpId]);
 

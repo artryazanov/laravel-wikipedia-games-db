@@ -20,7 +20,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property string|null $website_url Official website URL
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
- *
  * @property-read Wikipage|null $wikipage
  * @property-read Collection<int, Game> $games
  *

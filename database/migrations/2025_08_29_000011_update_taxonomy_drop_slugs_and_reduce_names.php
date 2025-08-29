@@ -27,7 +27,7 @@ return new class extends Migration
             $driver = Schema::getConnection()->getDriverName();
             // For SQLite, drop the unique index explicitly before dropping the column
             if ($driver === 'sqlite') {
-                $indexName = $tableName . '_slug_unique';
+                $indexName = $tableName.'_slug_unique';
                 try {
                     DB::statement('DROP INDEX IF EXISTS "'.$indexName.'"');
                 } catch (\Throwable $e) {

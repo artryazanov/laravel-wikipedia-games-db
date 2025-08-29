@@ -68,8 +68,14 @@ return new class extends Migration
                         DB::statement('DROP INDEX IF EXISTS wikipedia_games_wikipedia_url_unique');
                     } else {
                         Schema::table($table, function (Blueprint $table) {
-                            try { $table->dropUnique('wikipedia_games_title_unique'); } catch (Throwable $e) {}
-                            try { $table->dropUnique('wikipedia_games_wikipedia_url_unique'); } catch (Throwable $e) {}
+                            try {
+                                $table->dropUnique('wikipedia_games_title_unique');
+                            } catch (Throwable $e) {
+                            }
+                            try {
+                                $table->dropUnique('wikipedia_games_wikipedia_url_unique');
+                            } catch (Throwable $e) {
+                            }
                         });
                     }
                 } catch (Throwable $e) {

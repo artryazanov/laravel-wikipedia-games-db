@@ -17,7 +17,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property int|null $wikipage_id Reference to the wikipedia_game_wikipages table
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
- *
  * @property-read Wikipage|null $wikipage
  * @property-read Collection<int, Game> $games
  *
