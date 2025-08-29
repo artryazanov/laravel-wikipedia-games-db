@@ -51,7 +51,7 @@ class ProcessModePageJobTest extends TestCase
         // Pre-create mode with different name but matching wikipedia_url via wikipage
         $wpId = Wikipage::create([
             'title' => 'Single-player video game',
-            'wikipedia_url' => 'https://en.wikipedia.org/wiki/Single-player_video_game'
+            'wikipedia_url' => 'https://en.wikipedia.org/wiki/Single-player_video_game',
         ])->id;
         Mode::create(['name' => 'Single player', 'wikipage_id' => $wpId]);
 

@@ -9,7 +9,7 @@ class InfoboxParserTest extends TestCase
 {
     public function test_extracts_founded_year_and_website_url(): void
     {
-        $html = <<<HTML
+        $html = <<<'HTML'
         <table class="infobox">
             <tr>
                 <th>Founded</th>
@@ -22,7 +22,7 @@ class InfoboxParserTest extends TestCase
         </table>
         HTML;
 
-        $parser = new InfoboxParser();
+        $parser = new InfoboxParser;
         $data = $parser->parse($html);
 
         $this->assertSame(1991, $data['founded']);
@@ -31,7 +31,7 @@ class InfoboxParserTest extends TestCase
 
     public function test_extracts_developer_link_titles(): void
     {
-        $html = <<<HTML
+        $html = <<<'HTML'
         <table class="infobox">
             <tr>
                 <th>Developer(s)</th>
@@ -43,7 +43,7 @@ class InfoboxParserTest extends TestCase
         </table>
         HTML;
 
-        $parser = new InfoboxParser();
+        $parser = new InfoboxParser;
         $data = $parser->parse($html);
 
         $this->assertArrayHasKey('developers_link_titles', $data);
@@ -53,7 +53,7 @@ class InfoboxParserTest extends TestCase
 
     public function test_extracts_platform_link_titles(): void
     {
-        $html = <<<HTML
+        $html = <<<'HTML'
         <table class="infobox">
             <tr>
                 <th>Platforms</th>
@@ -65,7 +65,7 @@ class InfoboxParserTest extends TestCase
         </table>
         HTML;
 
-        $parser = new InfoboxParser();
+        $parser = new InfoboxParser;
         $data = $parser->parse($html);
 
         $this->assertArrayHasKey('platforms_link_titles', $data);
@@ -75,7 +75,7 @@ class InfoboxParserTest extends TestCase
 
     public function test_extracts_genre_link_titles(): void
     {
-        $html = <<<HTML
+        $html = <<<'HTML'
         <table class="infobox">
             <tr>
                 <th>Genres</th>
@@ -87,16 +87,17 @@ class InfoboxParserTest extends TestCase
         </table>
         HTML;
 
-        $parser = new InfoboxParser();
+        $parser = new InfoboxParser;
         $data = $parser->parse($html);
 
         $this->assertArrayHasKey('genres_link_titles', $data);
         $this->assertEqualsCanonicalizing(['Shooter (video games)', 'Role-playing video game'], $data['genres_link_titles']);
         $this->assertEqualsCanonicalizing(['Shooter', 'RPG'], $data['genres']);
     }
+
     public function test_extracts_mode_link_titles(): void
     {
-        $html = <<<HTML
+        $html = <<<'HTML'
         <table class="infobox">
             <tr>
                 <th>Modes</th>
@@ -108,7 +109,7 @@ class InfoboxParserTest extends TestCase
         </table>
         HTML;
 
-        $parser = new InfoboxParser();
+        $parser = new InfoboxParser;
         $data = $parser->parse($html);
 
         $this->assertArrayHasKey('modes_link_titles', $data);
@@ -118,7 +119,7 @@ class InfoboxParserTest extends TestCase
 
     public function test_extracts_series_link_titles(): void
     {
-        $html = <<<HTML
+        $html = <<<'HTML'
         <table class="infobox">
             <tr>
                 <th>Series</th>
@@ -130,7 +131,7 @@ class InfoboxParserTest extends TestCase
         </table>
         HTML;
 
-        $parser = new InfoboxParser();
+        $parser = new InfoboxParser;
         $data = $parser->parse($html);
 
         $this->assertArrayHasKey('series_link_titles', $data);

@@ -82,10 +82,10 @@ class InfoboxParser
                         $targets = $this->extractAnchorTargets($cell);
                         $links = $this->extractLinks($cell);
                         if (! empty($targets)) {
-                            $data[$internalKey] = !empty($links) ? $links : $targets;
+                            $data[$internalKey] = ! empty($links) ? $links : $targets;
                             $data[$internalKey.'_link_titles'] = $targets;
                         } else {
-                            $data[$internalKey] = !empty($links) ? $links : $this->extractList($cell);
+                            $data[$internalKey] = ! empty($links) ? $links : $this->extractList($cell);
                         }
                     } elseif ($internalKey === 'cover_image_url') {
                         $img = $cell->filter('img');

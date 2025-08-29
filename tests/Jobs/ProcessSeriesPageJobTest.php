@@ -51,7 +51,7 @@ class ProcessSeriesPageJobTest extends TestCase
         // Pre-create series with different name but matching wikipedia_url via wikipage
         $wpId = Wikipage::create([
             'title' => 'Mario (franchise)',
-            'wikipedia_url' => 'https://en.wikipedia.org/wiki/Mario_(franchise)'
+            'wikipedia_url' => 'https://en.wikipedia.org/wiki/Mario_(franchise)',
         ])->id;
         Series::create(['name' => 'Mario', 'wikipage_id' => $wpId]);
 

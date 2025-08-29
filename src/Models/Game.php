@@ -20,7 +20,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property int|null $release_year First 4-digit release year parsed
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
- *
  * @property-read Wikipage|null $wikipage
  * @property-read Collection<int, Genre> $genres
  * @property-read Collection<int, Platform> $platforms
