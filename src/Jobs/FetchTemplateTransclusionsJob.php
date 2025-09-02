@@ -82,4 +82,3 @@ class FetchTemplateTransclusionsJob extends AbstractWikipediaJob implements Shou
         }
     }
 }
-

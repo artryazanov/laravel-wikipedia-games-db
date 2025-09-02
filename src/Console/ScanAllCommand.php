@@ -56,4 +56,3 @@ class ScanAllCommand extends Command
         return self::SUCCESS;
     }
 }
-

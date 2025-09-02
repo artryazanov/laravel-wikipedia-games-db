@@ -33,4 +33,3 @@ class ProcessGamePageJobDisambiguationTest extends TestCase
         $this->assertSame(0, Game::count());
     }
 }
-

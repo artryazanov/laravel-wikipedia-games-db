@@ -43,4 +43,3 @@ class DiscoverByTemplateCommand extends Command
         return self::SUCCESS;
     }
 }
-
