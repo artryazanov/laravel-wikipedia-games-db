@@ -80,4 +80,3 @@ class FetchTemplateTransclusionsJobTest extends TestCase
         });
     }
 }
-

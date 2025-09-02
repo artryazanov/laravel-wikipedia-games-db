@@ -71,4 +71,3 @@ class FetchTemplateTransclusionsJob extends AbstractWikipediaJob
         }
     }
 }
-

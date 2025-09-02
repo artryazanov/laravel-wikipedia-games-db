@@ -52,4 +52,3 @@ class ScanAllCommandTest extends TestCase
         });
     }
 }
-
