@@ -166,9 +166,9 @@ Conditional dispatch
 - ProcessGamePageJob will only enqueue a Process*PageJob when the corresponding record is missing or when its linked `wikipage.wikipedia_url` is empty.
 - This minimizes redundant requests and focuses fetching on missing details.
 
-Throttling and uniqueness
-- All jobs inherit a throttle helper that respects game-scraper.throttle_milliseconds to avoid exceeding API limits.
-- Jobs implement ShouldBeUnique and use a uniqueId based on "ClassName:PageTitle" to avoid duplicate enqueues for the same page.
+Throttling and deduping
+- All jobs inherit a throttle helper that respects `game-scraper.throttle_milliseconds` to avoid exceeding API limits.
+- Jobs are idempotent: models are upserted and relations synced, so reprocessing the same page is safe. Queue-level uniqueness is not enabled by default; if you need strict uniqueness, you can implement `ShouldBeUnique` on specific jobs in your app fork.
 
 ## Testing
 This repository includes a full test suite based on Orchestra Testbench with an in-memory SQLite database.
@@ -179,6 +179,8 @@ This repository includes a full test suite based on Orchestra Testbench with an 
   - .\vendor\bin\phpunit --configuration phpunit.xml
 - Run tests (Unix/macOS):
   - vendor/bin/phpunit --configuration phpunit.xml
+
+You can also run via Composer script: `composer test`.
 
 If phpunit cannot be found, ensure Composer finished installing dependencies successfully.
 
