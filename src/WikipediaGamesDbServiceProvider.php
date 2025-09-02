@@ -3,6 +3,8 @@
 namespace Artryazanov\WikipediaGamesDb;
 
 use Artryazanov\WikipediaGamesDb\Console\ScrapeWikipediaCommand;
+use Artryazanov\WikipediaGamesDb\Console\DiscoverByTemplateCommand;
+use Artryazanov\WikipediaGamesDb\Console\ScanAllCommand;
 use Artryazanov\WikipediaGamesDb\Services\InfoboxParser;
 use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
 use Illuminate\Support\ServiceProvider;
@@ -40,6 +42,8 @@ class WikipediaGamesDbServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 ScrapeWikipediaCommand::class,
+                DiscoverByTemplateCommand::class,
+                ScanAllCommand::class,
             ]);
         }
 

@@ -90,10 +90,36 @@ This package ships migrations that create the following tables (with comments):
 The migrations check for existence prior to creation, making it safer for incremental adoption. A data migration backfills `wikipage_id` and moves `title`, `wikipedia_url`, `description`, `wikitext` into `wikipedia_game_wikipages`.
 
 ## Usage
-1) Start the scraping by dispatching the initial category job through the console command:
+You can kick off discovery in multiple ways. The fastest, high-precision path is via template transclusions.
+
+1) Run all discovery strategies in one go (templates + categories):
+
+```bash
+php artisan games:scan-all
+```
+
+2) Discover via Infobox template (recommended for precise bootstrap):
+
+```bash
+php artisan games:discover-by-template
+```
+
+This enumerates all pages that include `Template:Infobox video game` (main namespace) and enqueues parsing jobs. To also include series/franchises:
+
+```bash
+php artisan games:discover-by-template --series
+```
+
+3) Traverse categories (broad coverage; longer):
 
 ```bash
 php artisan games:scrape-wikipedia --category="Category:Video games"
+```
+
+Or seed multiple high-value roots (platforms and genres):
+
+```bash
+php artisan games:scrape-wikipedia --seed-high-value
 ```
 
 If `--category` is omitted, the command uses `game-scraper.root_category` from config (by default, English `Category:Video games`).
@@ -108,6 +134,7 @@ Tips:
 - Adjust `WIKIPEDIA_GAMES_DB_THROTTLE_MS` to respect API limits (start with 1000 ms).
 - Set a meaningful `WIKIPEDIA_GAMES_DB_USER_AGENT`.
 - Ensure your queue driver is configured (`QUEUE_CONNECTION` and, optionally, `WIKIPEDIA_GAMES_DB_QUEUE_CONNECTION`).
+- Prefer running the template-based discovery first to quickly build a large, accurate dataset; use category traversal to expand coverage over time.
 
 ## Scheduling (optional)
 You can schedule periodic updates (e.g., weekly) in `app/Console/Kernel.php`:

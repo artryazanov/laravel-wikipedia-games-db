@@ -30,6 +30,87 @@ class MediaWikiClient
     }
 
     /**
+     * List pages that embed/include a given template using list=embeddedin.
+     * Returns ['members' => array<int, array{title: string, ns: int}>, 'continue' => string|null] or null on failure.
+     */
+    public function getEmbeddedIn(string $templateTitle, ?string $continueToken = null): ?array
+    {
+        $params = [
+            'action' => 'query',
+            'format' => 'json',
+            'list' => 'embeddedin',
+            'eititle' => $templateTitle,
+            'eilimit' => 100,
+            'einamespace' => 0, // main/article namespace only
+        ];
+        if ($continueToken) {
+            $params['eicontinue'] = $continueToken;
+        }
+
+        $response = $this->http->get('', $params);
+        if ($response->failed()) {
+            Log::warning('MediaWiki getEmbeddedIn failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            return null;
+        }
+
+        $data = $response->json();
+        $members = Arr::get($data, 'query.embeddedin', []);
+        $cont = Arr::get($data, 'continue.eicontinue');
+
+        return [
+            'members' => array_map(function ($m) {
+                return [
+                    'title' => (string) ($m['title'] ?? ''),
+                    'ns' => (int) ($m['ns'] ?? 0),
+                ];
+            }, $members),
+            'continue' => $cont ?? null,
+        ];
+    }
+
+    /**
+     * Check if a page is a disambiguation page via prop=pageprops (ppprop=disambiguation).
+     */
+    public function isDisambiguation(string $pageTitle): bool
+    {
+        $params = [
+            'action' => 'query',
+            'format' => 'json',
+            'prop' => 'pageprops',
+            'ppprop' => 'disambiguation',
+            'titles' => $pageTitle,
+            'redirects' => 1,
+        ];
+
+        $resp = $this->http->get('', $params);
+        if ($resp->failed()) {
+            Log::info('MediaWiki pageprops failed', [
+                'status' => $resp->status(),
+                'body' => $resp->body(),
+            ]);
+
+            return false;
+        }
+
+        $data = $resp->json();
+        $pages = Arr::get($data, 'query.pages', []);
+        if (! is_array($pages)) {
+            return false;
+        }
+        foreach ($pages as $page) {
+            if (isset($page['pageprops']) && is_array($page['pageprops']) && array_key_exists('disambiguation', $page['pageprops'])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Fetch and cache parse bundle (HTML and wikitext) for a page in a single request.
      * Returns [html => ?string, wikitext => ?string].
      */

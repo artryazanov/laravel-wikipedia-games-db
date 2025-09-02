@@ -51,6 +51,20 @@ class ProcessGamePageJob extends AbstractWikipediaJob implements ShouldBeUnique
 
     private function doJob(MediaWikiClient $client, InfoboxParser $parser): void
     {
+        // Skip disambiguation pages early to avoid unnecessary parsing
+        try {
+            if ($client->isDisambiguation($this->pageTitle)) {
+                Log::info('Skipping disambiguation page', ['title' => $this->pageTitle]);
+
+                return;
+            }
+        } catch (\Throwable $e) {
+            Log::debug('Disambiguation check error; continuing', [
+                'title' => $this->pageTitle,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         $html = $client->getPageHtml($this->pageTitle);
         if (! $html) {
             $this->fail(new \RuntimeException("Failed to fetch HTML for page: {$this->pageTitle}"));

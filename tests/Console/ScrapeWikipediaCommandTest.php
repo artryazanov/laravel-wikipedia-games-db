@@ -62,4 +62,29 @@ class ScrapeWikipediaCommandTest extends TestCase
 
         Bus::assertNotDispatched(ProcessCategoryJob::class);
     }
+
+    public function test_seed_high_value_dispatches_platform_and_genre_roots(): void
+    {
+        Http::fake();
+        Bus::fake();
+
+        // Configure routing
+        config()->set('game-scraper.queue_connection', 'sync');
+        config()->set('game-scraper.queue_name', 'wikipedia');
+
+        $this->artisan('games:scrape-wikipedia', ['--seed-high-value' => true])
+            ->assertSuccessful();
+
+        Bus::assertDispatched(ProcessCategoryJob::class, function (ProcessCategoryJob $job) {
+            return $job->categoryTitle === 'Category:Video games by platform'
+                && $job->connection === 'sync'
+                && $job->queue === 'wikipedia';
+        });
+
+        Bus::assertDispatched(ProcessCategoryJob::class, function (ProcessCategoryJob $job) {
+            return $job->categoryTitle === 'Category:Video games by genre'
+                && $job->connection === 'sync'
+                && $job->queue === 'wikipedia';
+        });
+    }
 }
