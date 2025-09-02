@@ -6,7 +6,6 @@ use Artryazanov\WikipediaGamesDb\Models\Company;
 use Artryazanov\WikipediaGamesDb\Models\Wikipage;
 use Artryazanov\WikipediaGamesDb\Services\InfoboxParser;
 use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -15,7 +14,7 @@ use Illuminate\Support\Facades\Log;
  * It stores extended company fields: title, wikipedia_url, description, wikitext,
  * cover_image_url, founded (year), website_url.
  */
-class ProcessCompanyPageJob extends AbstractWikipediaJob implements ShouldBeUnique
+class ProcessCompanyPageJob extends AbstractWikipediaJob
 {
     /** Number of attempts before failing the job. */
     public int $tries = 3;
@@ -24,14 +23,6 @@ class ProcessCompanyPageJob extends AbstractWikipediaJob implements ShouldBeUniq
     public int $backoff = 120;
 
     public function __construct(public string $pageTitle) {}
-
-    /**
-     * Unique identifier for this job to prevent duplicate enqueues for the same page.
-     */
-    public function uniqueId(): string
-    {
-        return static::class.':'.$this->pageTitle;
-    }
 
     /**
      * Handle the queued job.

@@ -7,7 +7,6 @@ use Artryazanov\WikipediaGamesDb\Models\Wikipage;
 use Artryazanov\WikipediaGamesDb\Services\InfoboxParser;
 use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
 use Carbon\Carbon;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -17,7 +16,7 @@ use Throwable;
  * It stores extended engine fields: title, wikipedia_url, description, wikitext,
  * cover_image_url, release_date, website_url.
  */
-class ProcessEnginePageJob extends AbstractWikipediaJob implements ShouldBeUnique
+class ProcessEnginePageJob extends AbstractWikipediaJob
 {
     /** Number of attempts before failing the job. */
     public int $tries = 3;
@@ -26,14 +25,6 @@ class ProcessEnginePageJob extends AbstractWikipediaJob implements ShouldBeUniqu
     public int $backoff = 120;
 
     public function __construct(public string $pageTitle) {}
-
-    /**
-     * Unique identifier for this job to prevent duplicate enqueues for the same page.
-     */
-    public function uniqueId(): string
-    {
-        return static::class.':'.$this->pageTitle;
-    }
 
     /**
      * Handle the queued job.

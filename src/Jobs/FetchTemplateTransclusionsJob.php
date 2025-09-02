@@ -3,7 +3,6 @@
 namespace Artryazanov\WikipediaGamesDb\Jobs;
 
 use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -11,7 +10,7 @@ use Illuminate\Support\Facades\Log;
  * (e.g., Template:Infobox video game) via list=embeddedin, and fans out
  * ProcessGamePageJob for each page found. Handles pagination via eicontinue.
  */
-class FetchTemplateTransclusionsJob extends AbstractWikipediaJob implements ShouldBeUnique
+class FetchTemplateTransclusionsJob extends AbstractWikipediaJob
 {
     /** Number of attempts before failing the job. */
     public int $tries = 3;
@@ -23,16 +22,6 @@ class FetchTemplateTransclusionsJob extends AbstractWikipediaJob implements Shou
         public string $templateTitle,
         public ?string $continueToken = null
     ) {}
-
-    /**
-     * Unique identifier for this job, scoped by the template title.
-     */
-    public function uniqueId(): string
-    {
-        // Fetching a specific page of results should still be unique by template,
-        // so we avoid multiple parallel enumerators for the same template root.
-        return static::class.':'.$this->templateTitle;
-    }
 
     public function handle(MediaWikiClient $client): void
     {
