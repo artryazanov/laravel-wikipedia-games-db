@@ -18,19 +18,29 @@ class ProcessCompanyPageJobCleanNameTest extends TestCase
         config()->set('game-scraper.throttle_milliseconds', 0);
 
         $title = 'Valve (company)';
-        $html = '<html></html>';
+        // Minimal infobox HTML that InfoboxParser::parse will extract data from
+        $html = <<<HTML
+        <html>
+            <body>
+                <table class="infobox">
+                    <tr>
+                        <th>Founded</th>
+                        <td>1996</td>
+                    </tr>
+                </table>
+            </body>
+        </html>
+        HTML;
 
         $client = $this->mock(MediaWikiClient::class, function ($mock) use ($title, $html) {
             $mock->shouldReceive('getPageHtml')->once()->with($title)->andReturn($html);
+            $mock->shouldReceive('getPageMainImage')->once()->with($title)->andReturn(null);
             $mock->shouldReceive('getPageLeadDescription')->once()->with($title)->andReturn('desc');
             $mock->shouldReceive('getPageWikitext')->once()->with($title)->andReturn('wt');
         });
 
-        $parser = $this->mock(InfoboxParser::class, function ($mock) {
-            $mock->shouldReceive('parse')->once()->andReturn([
-                // No extra fields needed for this assertion
-            ]);
-        });
+        // Use real parser so that provided HTML yields non-empty parsed data
+        $parser = new InfoboxParser();
 
         (new ProcessCompanyPageJob($title))->handle($client, $parser);
 
@@ -40,4 +50,3 @@ class ProcessCompanyPageJobCleanNameTest extends TestCase
         $this->assertSame('Valve (company)', $company->name);
     }
 }
-
