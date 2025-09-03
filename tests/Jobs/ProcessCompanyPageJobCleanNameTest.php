@@ -19,7 +19,7 @@ class ProcessCompanyPageJobCleanNameTest extends TestCase
 
         $title = 'Valve (company)';
         // Minimal infobox HTML that InfoboxParser::parse will extract data from
-        $html = <<<HTML
+        $html = <<<'HTML'
         <html>
             <body>
                 <table class="infobox">
@@ -40,7 +40,7 @@ class ProcessCompanyPageJobCleanNameTest extends TestCase
         });
 
         // Use real parser so that provided HTML yields non-empty parsed data
-        $parser = new InfoboxParser();
+        $parser = new InfoboxParser;
 
         (new ProcessCompanyPageJob($title))->handle($client, $parser);
 
