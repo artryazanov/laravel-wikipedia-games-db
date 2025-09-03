@@ -36,6 +36,7 @@ class Company extends Model
      */
     protected $fillable = [
         'name',
+        'clean_name',
         'wikipage_id',
         'cover_image_url',
         'founded',

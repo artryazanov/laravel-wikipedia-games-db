@@ -20,8 +20,12 @@ use Throwable;
 /**
  * ProcessGamePageJob fetches a page HTML, parses infobox data, and persists it idempotently.
  */
+use Artryazanov\WikipediaGamesDb\Support\Concerns\CleansTitles;
+
 class ProcessGamePageJob extends AbstractWikipediaJob
 {
+    use CleansTitles;
+
     /** Number of attempts before failing the job. */
     public int $tries = 3;
 
@@ -88,8 +92,12 @@ class ProcessGamePageJob extends AbstractWikipediaJob
             $data['developers_link_titles'] ?? [],
             $data['publishers_link_titles'] ?? []
         ));
+        // Exclude footnote-like tokens such as "[a]", "[b]"
+        $linkedCompanies = array_values(array_filter($linkedCompanies, function ($name) {
+            return is_string($name) && $name !== '' && ! $this->isBracketFootnoteToken($name);
+        }));
         foreach ($linkedCompanies as $companyTitle) {
-            if (is_string($companyTitle) && $companyTitle !== '' && $this->needsDetails(Company::class, $companyTitle)) {
+            if ($this->needsDetails(Company::class, $companyTitle)) {
                 ProcessCompanyPageJob::dispatch($companyTitle);
             }
         }
@@ -200,13 +208,17 @@ class ProcessGamePageJob extends AbstractWikipediaJob
 
             $companySync = [];
             if (! empty($data['developers']) && is_array($data['developers'])) {
-                $devIds = $this->getIdsFor(Company::class, $data['developers']);
+                // Filter out tokens like "[a]", "[b]"
+                $developers = array_values(array_filter($data['developers'], fn ($n) => is_string($n) && $n !== '' && ! $this->isBracketFootnoteToken($n)));
+                $devIds = $this->getIdsFor(Company::class, $developers);
                 foreach ($devIds as $id) {
                     $companySync[$id] = ['role' => 'developer'];
                 }
             }
             if (! empty($data['publishers']) && is_array($data['publishers'])) {
-                $pubIds = $this->getIdsFor(Company::class, $data['publishers']);
+                // Filter out tokens like "[a]", "[b]"
+                $publishers = array_values(array_filter($data['publishers'], fn ($n) => is_string($n) && $n !== '' && ! $this->isBracketFootnoteToken($n)));
+                $pubIds = $this->getIdsFor(Company::class, $publishers);
                 foreach ($pubIds as $id) {
                     $companySync[$id] = ['role' => 'publisher'];
                 }
@@ -236,19 +248,6 @@ class ProcessGamePageJob extends AbstractWikipediaJob
         }
 
         return $ids;
-    }
-
-    private function makeCleanTitle(string $title): string
-    {
-        // Remove trailing parenthetical disambiguators like "(1999 video game)", "(SNES)", etc.
-        $clean = trim($title);
-        while (preg_match('/\s*\([^()]*\)\s*$/u', $clean)) {
-            $clean = preg_replace('/\s*\([^()]*\)\s*$/u', '', $clean) ?? $clean;
-        }
-        // Collapse multiple whitespace to a single space
-        $clean = preg_replace('/\s+/u', ' ', $clean) ?? $clean;
-
-        return trim($clean);
     }
 
     private function extractReleaseYear(?string $dateString): ?int
@@ -304,5 +303,15 @@ class ProcessGamePageJob extends AbstractWikipediaJob
 
             return null;
         }
+    }
+
+    /**
+     * Detect footnote-like tokens such as "[a]", "[b]", "[c]" that are not company names.
+     */
+    private function isBracketFootnoteToken(string $value): bool
+    {
+        $v = trim($value);
+        // Match exactly one letter or number in square brackets, e.g., [a] or [1]
+        return (bool) preg_match('/^\[[a-z0-9]\]$/i', $v);
     }
 }

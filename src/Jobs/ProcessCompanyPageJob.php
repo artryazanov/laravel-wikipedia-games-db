@@ -6,6 +6,7 @@ use Artryazanov\WikipediaGamesDb\Models\Company;
 use Artryazanov\WikipediaGamesDb\Models\Wikipage;
 use Artryazanov\WikipediaGamesDb\Services\InfoboxParser;
 use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
+use Artryazanov\WikipediaGamesDb\Support\Concerns\CleansTitles;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Log;
  */
 class ProcessCompanyPageJob extends AbstractWikipediaJob
 {
+    use CleansTitles;
     /** Number of attempts before failing the job. */
     public int $tries = 3;
 
@@ -59,10 +61,11 @@ class ProcessCompanyPageJob extends AbstractWikipediaJob
         }
 
         $leadDescription = $client->getPageLeadDescription($this->pageTitle);
+        $cleanName = $this->makeCleanTitle($this->pageTitle);
         $wikitext = $client->getPageWikitext($this->pageTitle);
         $wikipediaUrl = 'https://en.wikipedia.org/wiki/'.str_replace(' ', '_', $this->pageTitle);
 
-        DB::transaction(function () use ($data, $leadDescription, $wikitext, $wikipediaUrl) {
+        DB::transaction(function () use ($data, $leadDescription, $wikitext, $wikipediaUrl, $cleanName) {
             // Upsert Wikipage
             $wikipage = Wikipage::where('wikipedia_url', $wikipediaUrl)
                 ->orWhere('title', $this->pageTitle)
@@ -87,6 +90,7 @@ class ProcessCompanyPageJob extends AbstractWikipediaJob
 
             $payload = [
                 'wikipage_id' => $wikipage->id,
+                'clean_name' => $cleanName,
                 'cover_image_url' => $data['cover_image_url'] ?? null,
                 'founded' => isset($data['founded']) && is_scalar($data['founded']) ? (int) $data['founded'] : null,
                 'website_url' => $data['website_url'] ?? null,
