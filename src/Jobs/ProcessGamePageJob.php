@@ -12,15 +12,14 @@ use Artryazanov\WikipediaGamesDb\Models\Series;
 use Artryazanov\WikipediaGamesDb\Models\Wikipage;
 use Artryazanov\WikipediaGamesDb\Services\InfoboxParser;
 use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
+use Artryazanov\WikipediaGamesDb\Support\Concerns\CleansTitles;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Throwable;
-
 /**
  * ProcessGamePageJob fetches a page HTML, parses infobox data, and persists it idempotently.
  */
-use Artryazanov\WikipediaGamesDb\Support\Concerns\CleansTitles;
+use Throwable;
 
 class ProcessGamePageJob extends AbstractWikipediaJob
 {
@@ -311,6 +310,7 @@ class ProcessGamePageJob extends AbstractWikipediaJob
     private function isBracketFootnoteToken(string $value): bool
     {
         $v = trim($value);
+
         // Match exactly one letter or number in square brackets, e.g., [a] or [1]
         return (bool) preg_match('/^\[[a-z0-9]\]$/i', $v);
     }
