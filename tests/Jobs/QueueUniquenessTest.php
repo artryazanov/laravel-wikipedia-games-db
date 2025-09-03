@@ -51,4 +51,3 @@ class QueueUniquenessTest extends TestCase
         Queue::assertPushed(ProcessCategoryJob::class, 2);
     }
 }
-

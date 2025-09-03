@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\RateLimiter;
 /**
  * Base an abstract job with shared queue traits and throttling helper.
  */
-abstract class AbstractWikipediaJob implements ShouldQueue, ShouldBeUniqueUntilProcessing
+abstract class AbstractWikipediaJob implements ShouldBeUniqueUntilProcessing, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -65,6 +65,6 @@ abstract class AbstractWikipediaJob implements ShouldQueue, ShouldBeUniqueUntilP
 
         $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
-        return static::class . ':' . md5($json ?: static::class);
+        return static::class.':'.md5($json ?: static::class);
     }
 }
