@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Log;
 class ProcessCompanyPageJob extends AbstractWikipediaJob
 {
     use CleansTitles;
+
     /** Number of attempts before failing the job. */
     public int $tries = 3;
 

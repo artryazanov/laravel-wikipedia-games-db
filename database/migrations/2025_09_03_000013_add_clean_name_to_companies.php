@@ -1,10 +1,10 @@
 <?php
 
+use Artryazanov\WikipediaGamesDb\Support\Concerns\CleansTitles;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Artryazanov\WikipediaGamesDb\Support\Concerns\CleansTitles;
 
 return new class extends Migration
 {
@@ -47,4 +47,3 @@ return new class extends Migration
         }
     }
 };
-

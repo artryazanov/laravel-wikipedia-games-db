@@ -35,4 +35,3 @@ return new class extends Migration
         // Non-reversible: deleted junk records cannot be restored.
     }
 };
-

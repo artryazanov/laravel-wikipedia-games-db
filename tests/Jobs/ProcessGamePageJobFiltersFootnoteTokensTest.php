@@ -57,4 +57,3 @@ class ProcessGamePageJobFiltersFootnoteTokensTest extends TestCase
         $this->assertDatabaseHas('wikipedia_game_companies', ['name' => 'GT Interactive']);
     }
 }
-

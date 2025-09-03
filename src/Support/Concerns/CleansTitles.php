@@ -23,4 +23,3 @@ trait CleansTitles
         return trim($clean);
     }
 }
-

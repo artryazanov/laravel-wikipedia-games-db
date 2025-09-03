@@ -40,4 +40,3 @@ class ProcessCompanyPageJobCleanNameTest extends TestCase
         $this->assertSame('Valve (company)', $company->name);
     }
 }
-
