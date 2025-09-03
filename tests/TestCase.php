@@ -18,6 +18,8 @@ class TestCase extends BaseTestCase
     {
         // Ensure queue runs synchronously during tests
         $app['config']->set('queue.default', 'sync');
+        // Use in-memory cache to support unique job locks in tests
+        $app['config']->set('cache.default', 'array');
 
         // Provide sensible defaults for package config in tests
         $app['config']->set('game-scraper.queue_connection', null);

@@ -3,6 +3,7 @@
 namespace Artryazanov\WikipediaGamesDb\Jobs;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -12,7 +13,7 @@ use Illuminate\Support\Facades\RateLimiter;
 /**
  * Base an abstract job with shared queue traits and throttling helper.
  */
-abstract class AbstractWikipediaJob implements ShouldQueue
+abstract class AbstractWikipediaJob implements ShouldQueue, ShouldBeUniqueUntilProcessing
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -47,5 +48,23 @@ abstract class AbstractWikipediaJob implements ShouldQueue
     protected function getThrottleKey(): string
     {
         return 'job:laravel-wikipedia-games-db-jobs:lock';
+    }
+
+    /**
+     * Provide a stable unique identifier so duplicate jobs aren't queued.
+     */
+    public function uniqueId(): string
+    {
+        $payload = [];
+        foreach (['pageTitle', 'templateTitle', 'categoryTitle', 'continueToken'] as $key) {
+            if (property_exists($this, $key)) {
+                /** @phpstan-ignore-next-line */
+                $payload[$key] = $this->{$key};
+            }
+        }
+
+        $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        return static::class . ':' . md5($json ?: static::class);
     }
 }
