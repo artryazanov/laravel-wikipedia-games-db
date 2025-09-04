@@ -3,17 +3,16 @@
 namespace Artryazanov\WikipediaGamesDb\Jobs;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\RateLimiter;
 
 /**
  * Base an abstract job with shared queue traits and throttling helper.
  */
-abstract class AbstractWikipediaJob implements ShouldQueue, ShouldBeUniqueUntilProcessing
+abstract class AbstractWikipediaJob implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -22,32 +21,12 @@ abstract class AbstractWikipediaJob implements ShouldQueue, ShouldBeUniqueUntilP
      */
     protected function executeWithThrottle(callable $callback): void
     {
+        $callback();
+
         $delayMs = (int) config('game-scraper.throttle_milliseconds', 1000);
-        if ($delayMs <= 0) {
-            $callback();
-
-            return;
+        if ($delayMs > 0) {
+            usleep($delayMs * 1000);
         }
-
-        $decaySeconds = (int) ceil($delayMs / 1000);
-        $key = $this->getThrottleKey();
-
-        $executed = RateLimiter::attempt($key, 1, function () use ($callback) {
-            $callback();
-        }, $decaySeconds);
-
-        if (! $executed) {
-            // Release the job back to the queue to try again after the decay
-            $this->release($decaySeconds);
-        }
-    }
-
-    /**
-     * Allow overriding the throttle key in child jobs if needed.
-     */
-    protected function getThrottleKey(): string
-    {
-        return 'job:laravel-wikipedia-games-db-jobs:lock';
     }
 
     /**
