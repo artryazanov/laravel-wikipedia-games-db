@@ -21,11 +21,16 @@ abstract class AbstractWikipediaJob implements ShouldBeUnique, ShouldQueue
      */
     protected function executeWithThrottle(callable $callback): void
     {
+        $startedAt = microtime(true);
         $callback();
 
         $delayMs = (int) config('game-scraper.throttle_milliseconds', 1000);
         if ($delayMs > 0) {
-            usleep($delayMs * 1000);
+            $elapsedMicros = (int) ((microtime(true) - $startedAt) * 1_000_000);
+            $sleepMicros = max(0, ($delayMs * 1000) - $elapsedMicros);
+            if ($sleepMicros > 0) {
+                usleep($sleepMicros);
+            }
         }
     }
 
