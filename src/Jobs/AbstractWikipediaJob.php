@@ -63,8 +63,6 @@ abstract class AbstractWikipediaJob implements ShouldQueue, ShouldBeUniqueUntilP
             }
         }
 
-        $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-
-        return static::class . ':' . md5($json ?: static::class);
+        return json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 }
