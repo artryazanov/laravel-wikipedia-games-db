@@ -52,4 +52,3 @@ class ProcessGamePageJobCompanyCleanNameTest extends TestCase
         $this->assertSame('Nintendo', $nintendo->clean_name);
     }
 }
-
