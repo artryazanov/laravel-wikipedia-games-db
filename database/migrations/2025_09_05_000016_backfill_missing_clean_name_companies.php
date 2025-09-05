@@ -17,7 +17,7 @@ return new class extends Migration
 
         DB::table('wikipedia_game_companies')
             ->whereNull('clean_name')
-            ->orWhere('clean_name', '=','')
+            ->orWhere('clean_name', '=', '')
             ->orderBy('id')
             ->select('id', 'name')
             ->chunkById(500, function ($rows) {
@@ -39,4 +39,3 @@ return new class extends Migration
         // No-op: data backfill is not safely reversible.
     }
 };
-
