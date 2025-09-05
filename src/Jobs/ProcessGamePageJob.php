@@ -241,7 +241,10 @@ class ProcessGamePageJob extends AbstractWikipediaJob
         foreach ($names as $name) {
             /** @var \Illuminate\Database\Eloquent\Model $model */
             $model = $modelClass::firstOrCreate(
-                ['name' => $name]
+                [
+                    'name' => $name,
+                    'clean_name' => $this->makeCleanTitle($name),
+                ],
             );
             $ids[] = $model->id;
         }
