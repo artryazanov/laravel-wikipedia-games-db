@@ -3,8 +3,8 @@
 namespace Tests\Jobs;
 
 use Artryazanov\WikipediaGamesDb\Jobs\ProcessGamePageJob;
-use Artryazanov\WikipediaGamesDb\Models\Genre;
 use Artryazanov\WikipediaGamesDb\Models\Game;
+use Artryazanov\WikipediaGamesDb\Models\Genre;
 use Artryazanov\WikipediaGamesDb\Services\InfoboxParser;
 use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -46,4 +46,3 @@ class ProcessGamePageJobReusesExistingTaxonomiesTest extends TestCase
         $this->assertEqualsCanonicalizing(['Shooter', 'RPG'], $game->genres->pluck('name')->all());
     }
 }
-
