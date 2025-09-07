@@ -16,7 +16,6 @@ class ProcessGamePageJobDispatchModesTest extends TestCase
 
     public function test_dispatches_mode_jobs_for_linked_modes(): void
     {
-        config()->set('game-scraper.throttle_milliseconds', 0);
 
         $title = 'Game With Mode Links';
         $html = '<html></html>';

@@ -16,7 +16,6 @@ class ProcessModePageJobTest extends TestCase
 
     public function test_persists_extended_mode_fields(): void
     {
-        config()->set('game-scraper.throttle_milliseconds', 0);
 
         $title = 'Single-player video game';
         $html = '<html></html>';
@@ -44,7 +43,6 @@ class ProcessModePageJobTest extends TestCase
 
     public function test_updates_existing_mode_found_by_wikipedia_url(): void
     {
-        config()->set('game-scraper.throttle_milliseconds', 0);
         $title = 'Single-player video game';
         $html = '<html></html>';
 

@@ -16,7 +16,6 @@ class ProcessGamePageJobDispatchPlatformsTest extends TestCase
 
     public function test_dispatches_platform_jobs_for_linked_platforms(): void
     {
-        config()->set('game-scraper.throttle_milliseconds', 0);
 
         $title = 'Game With Platform Links';
         $html = '<html></html>';

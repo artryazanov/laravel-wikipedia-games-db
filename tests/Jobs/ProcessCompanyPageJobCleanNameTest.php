@@ -15,7 +15,6 @@ class ProcessCompanyPageJobCleanNameTest extends TestCase
 
     public function test_job_sets_clean_name_from_title(): void
     {
-        config()->set('game-scraper.throttle_milliseconds', 0);
 
         $title = 'Valve (company)';
         // Minimal infobox HTML that InfoboxParser::parse will extract data from

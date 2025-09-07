@@ -15,7 +15,6 @@ class ProcessGamePageJobCompanyCleanNameTest extends TestCase
 
     public function test_sets_clean_name_when_creating_companies_via_game_job(): void
     {
-        config()->set('game-scraper.throttle_milliseconds', 0);
 
         $title = 'Some Game Title';
         $html = '<html></html>';

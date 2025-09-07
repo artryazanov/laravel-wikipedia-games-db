@@ -16,7 +16,6 @@ class ProcessEnginePageJobTest extends TestCase
 
     public function test_persists_extended_engine_fields(): void
     {
-        config()->set('game-scraper.throttle_milliseconds', 0);
 
         $title = 'Unreal Engine 3';
         $html = '<html></html>';
@@ -51,7 +50,6 @@ class ProcessEnginePageJobTest extends TestCase
 
     public function test_cover_image_fallback_used_when_missing(): void
     {
-        config()->set('game-scraper.throttle_milliseconds', 0);
 
         $title = 'Unity (game engine)';
         $html = '<html></html>';
@@ -78,7 +76,6 @@ class ProcessEnginePageJobTest extends TestCase
 
     public function test_updates_existing_engine_found_by_wikipedia_url(): void
     {
-        config()->set('game-scraper.throttle_milliseconds', 0);
         $title = 'Unreal Engine 3';
         $html = '<html></html>';
 

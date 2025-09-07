@@ -16,7 +16,6 @@ class ProcessGamePageJobDispatchEnginesTest extends TestCase
 
     public function test_dispatches_engine_jobs_for_linked_engines(): void
     {
-        config()->set('game-scraper.throttle_milliseconds', 0);
 
         $title = 'Game With Engine Links';
         $html = '<html></html>';

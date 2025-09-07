@@ -28,7 +28,6 @@ class ProcessGamePageJobConditionalDispatchSkipTest extends TestCase
 
     public function test_does_not_dispatch_taxonomy_jobs_when_records_exist_with_wikipedia_url(): void
     {
-        config()->set('game-scraper.throttle_milliseconds', 0);
 
         // Pre-create records that match link titles and already have wikipage with wikipedia_url
         // Companies

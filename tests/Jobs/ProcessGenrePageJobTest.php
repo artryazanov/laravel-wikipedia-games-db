@@ -16,7 +16,6 @@ class ProcessGenrePageJobTest extends TestCase
 
     public function test_persists_extended_genre_fields(): void
     {
-        config()->set('game-scraper.throttle_milliseconds', 0);
 
         $title = 'Shooter (video games)';
         $html = '<html></html>';
@@ -46,7 +45,6 @@ class ProcessGenrePageJobTest extends TestCase
 
     public function test_updates_existing_genre_found_by_wikipedia_url(): void
     {
-        config()->set('game-scraper.throttle_milliseconds', 0);
         $title = 'Shooter (video games)';
         $html = '<html></html>';
 

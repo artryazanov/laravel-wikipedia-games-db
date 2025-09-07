@@ -15,7 +15,6 @@ class LongSlugTest extends TestCase
 
     public function test_extremely_long_taxonomy_names_do_not_overflow_slug_column(): void
     {
-        config()->set('game-scraper.throttle_milliseconds', 0);
 
         $title = 'Very Long Slug Game';
         $html = '<html></html>';

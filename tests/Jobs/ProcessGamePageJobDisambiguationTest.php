@@ -15,7 +15,6 @@ class ProcessGamePageJobDisambiguationTest extends TestCase
 
     public function test_skips_processing_when_page_is_disambiguation(): void
     {
-        config()->set('game-scraper.throttle_milliseconds', 0);
 
         $title = 'Some Ambiguous Title';
 
