@@ -15,7 +15,6 @@ class ProcessCompanyPageJobTest extends TestCase
 
     public function test_persists_extended_company_fields(): void
     {
-        config()->set('game-scraper.throttle_milliseconds', 0);
 
         $title = 'Id Software';
         $html = '<html></html>';
@@ -50,7 +49,6 @@ class ProcessCompanyPageJobTest extends TestCase
 
     public function test_cover_image_fallback_used_when_missing(): void
     {
-        config()->set('game-scraper.throttle_milliseconds', 0);
 
         $title = 'Valve';
         $html = '<html></html>';
@@ -78,7 +76,6 @@ class ProcessCompanyPageJobTest extends TestCase
 
     public function test_updates_existing_company_found_by_wikipedia_url(): void
     {
-        config()->set('game-scraper.throttle_milliseconds', 0);
         $title = 'Id Software';
         $html = '<html></html>';
 

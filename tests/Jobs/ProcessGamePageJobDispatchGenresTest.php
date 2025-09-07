@@ -16,7 +16,6 @@ class ProcessGamePageJobDispatchGenresTest extends TestCase
 
     public function test_dispatches_genre_jobs_for_linked_genres(): void
     {
-        config()->set('game-scraper.throttle_milliseconds', 0);
 
         $title = 'Game With Genre Links';
         $html = '<html></html>';

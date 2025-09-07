@@ -15,7 +15,6 @@ class ProcessGamePageJobTest extends TestCase
 
     public function test_persists_game_and_relations_from_parsed_data(): void
     {
-        config()->set('game-scraper.throttle_milliseconds', 0);
 
         $title = 'Doom (1993 video game)';
         $html = '<html></html>';
@@ -70,7 +69,6 @@ class ProcessGamePageJobTest extends TestCase
 
     public function test_cover_image_fallback_used_when_missing(): void
     {
-        config()->set('game-scraper.throttle_milliseconds', 0);
 
         $title = 'Some Game';
         $html = '<html></html>';
@@ -97,7 +95,6 @@ class ProcessGamePageJobTest extends TestCase
 
     public function test_no_db_writes_when_parser_returns_empty(): void
     {
-        config()->set('game-scraper.throttle_milliseconds', 0);
 
         $title = 'Empty Page';
         $html = '<html></html>';

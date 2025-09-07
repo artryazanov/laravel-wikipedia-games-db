@@ -237,22 +237,36 @@ class ProcessGamePageJob extends AbstractWikipediaJob
      */
     private function getIdsFor(string $modelClass, array $names): array
     {
-        $ids = [];
-        foreach ($names as $name) {
-            /** @var \Illuminate\Database\Eloquent\Model $model */
-            // When creating new companies, also persist clean_name
-            if ($modelClass === Company::class) {
-                $model = $modelClass::firstOrCreate(
-                    ['name' => $name],
-                    ['clean_name' => $this->makeCleanTitle($name)]
-                );
-            } else {
-                $model = $modelClass::firstOrCreate(['name' => $name]);
-            }
-            $ids[] = $model->id;
+        $names = array_values(array_unique(array_filter($names, fn ($n) => is_string($n) && $n !== '')));
+        if ($names === []) {
+            return [];
         }
 
-        return $ids;
+        /** @var \Illuminate\Database\Eloquent\Model $modelClass */
+        $existing = $modelClass::query()
+            ->whereIn('name', $names)
+            ->pluck('id', 'name');
+
+        $missing = array_diff($names, $existing->keys()->all());
+        if ($missing !== []) {
+            $now = now();
+            $insert = [];
+            foreach ($missing as $name) {
+                $row = ['name' => $name, 'created_at' => $now, 'updated_at' => $now];
+                if ($modelClass === Company::class) {
+                    $row['clean_name'] = $this->makeCleanTitle($name);
+                }
+                $insert[] = $row;
+            }
+            $modelClass::insert($insert);
+
+            // Reload IDs for all names including newly inserted ones
+            $existing = $modelClass::query()
+                ->whereIn('name', $names)
+                ->pluck('id', 'name');
+        }
+
+        return array_values($existing->all());
     }
 
     private function extractReleaseYear(?string $dateString): ?int
@@ -280,16 +294,11 @@ class ProcessGamePageJob extends AbstractWikipediaJob
      */
     private function needsDetails(string $modelClass, string $linkedTitle): bool
     {
-        /** @var \Illuminate\Database\Eloquent\Model|null $record */
-        $record = $modelClass::where('name', $linkedTitle)->first();
-
-        if (! $record) {
-            return true;
-        }
-
-        $url = optional($record->wikipage)->wikipedia_url ?? null;
-
-        return ! is_string($url) || trim((string) $url) === '';
+        return ! $modelClass::where('name', $linkedTitle)
+            ->whereHas('wikipage', function ($q) {
+                $q->whereNotNull('wikipedia_url')->where('wikipedia_url', '!=', '');
+            })
+            ->exists();
     }
 
     private function parseDate(?string $dateString): ?Carbon

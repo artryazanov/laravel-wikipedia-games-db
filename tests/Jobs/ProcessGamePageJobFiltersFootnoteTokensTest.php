@@ -17,7 +17,6 @@ class ProcessGamePageJobFiltersFootnoteTokensTest extends TestCase
 
     public function test_ignores_bracket_tokens_in_company_links_and_names(): void
     {
-        config()->set('game-scraper.throttle_milliseconds', 0);
 
         $title = 'Game With Footnotes';
         $html = '<html></html>';

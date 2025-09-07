@@ -16,7 +16,6 @@ class ProcessPlatformPageJobTest extends TestCase
 
     public function test_persists_extended_platform_fields(): void
     {
-        config()->set('game-scraper.throttle_milliseconds', 0);
 
         $title = 'PlayStation 5';
         $html = '<html></html>';
@@ -51,7 +50,6 @@ class ProcessPlatformPageJobTest extends TestCase
 
     public function test_cover_image_fallback_used_when_missing(): void
     {
-        config()->set('game-scraper.throttle_milliseconds', 0);
 
         $title = 'Nintendo Switch';
         $html = '<html></html>';
@@ -79,7 +77,6 @@ class ProcessPlatformPageJobTest extends TestCase
 
     public function test_updates_existing_platform_found_by_wikipedia_url(): void
     {
-        config()->set('game-scraper.throttle_milliseconds', 0);
         $title = 'Xbox Series X';
         $html = '<html></html>';
 

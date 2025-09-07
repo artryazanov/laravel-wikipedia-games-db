@@ -16,7 +16,6 @@ class ProcessSeriesPageJobTest extends TestCase
 
     public function test_persists_extended_series_fields(): void
     {
-        config()->set('game-scraper.throttle_milliseconds', 0);
 
         $title = 'The Legend of Zelda';
         $html = '<html></html>';
@@ -44,7 +43,6 @@ class ProcessSeriesPageJobTest extends TestCase
 
     public function test_updates_existing_series_found_by_wikipedia_url(): void
     {
-        config()->set('game-scraper.throttle_milliseconds', 0);
         $title = 'Mario (franchise)';
         $html = '<html></html>';
 
