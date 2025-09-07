@@ -258,7 +258,10 @@ class ProcessGamePageJob extends AbstractWikipediaJob
                 }
                 $insert[] = $row;
             }
-            $modelClass::insert($insert);
+            // Avoid unique constraint race conditions between concurrent jobs
+            // by ignoring rows that another worker inserted meanwhile.
+            // MySQL will use INSERT IGNORE; SQLite/Postgres use equivalent behavior.
+            $modelClass::insertOrIgnore($insert);
 
             // Reload IDs for all names including newly inserted ones
             $existing = $modelClass::query()
