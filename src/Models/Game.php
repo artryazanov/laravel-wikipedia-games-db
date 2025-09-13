@@ -58,6 +58,15 @@ class Game extends Model
     ];
 
     /**
+     * Mutator: decode percent-encoded URLs before persisting to avoid exceeding column length.
+     */
+    public function setCoverImageUrlAttribute($value): void
+    {
+        // Use rawurldecode to avoid converting plus signs (+) to spaces, which urldecode would do.
+        $this->attributes['cover_image_url'] = is_string($value) && $value !== '' ? rawurldecode($value) : null;
+    }
+
+    /**
      * Related Wikipedia page meta.
      */
     public function wikipage(): BelongsTo
