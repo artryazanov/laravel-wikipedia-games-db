@@ -203,29 +203,35 @@ class InfoboxParser
 
     /**
      * Extract a date string in a simple, tolerant way. Returns first found date-like string.
+     * Handles cases where the month is concatenated with preceding words (e.g., "iOSMarch 7, 2013").
      */
     private function extractDate(Crawler $cell): ?string
     {
         $text = $cell->text();
+        // Normalize internal whitespace
+        $text = preg_replace('/\s+/u', ' ', $text) ?? $text;
 
-        // Try common English formats: Month dd, yyyy (e.g., December 19, 2024)
-        if (preg_match('/([A-Za-z]+\s+\d{1,2},\s+\d{4})/u', $text, $m)) {
-            return $m[1];
+        // Use explicit month-name patterns to avoid capturing preceding letters like "iOSMarch"
+        $months = '(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)';
+
+        // Month dd, yyyy (e.g., March 7, 2013)
+        if (preg_match("/($months)\s+\d{1,2},\s+\d{4}/iu", $text, $m)) {
+            return $m[0];
         }
 
-        // dd Month yyyy (e.g., 19 December 2024)
-        if (preg_match('/(\d{1,2}\s+[A-Za-z]+\s+\d{4})/u', $text, $m)) {
-            return $m[1];
+        // dd Month yyyy (e.g., 7 March 2013)
+        if (preg_match("/\b\d{1,2}\s+($months)\s+\d{4}\b/iu", $text, $m)) {
+            return $m[0];
         }
 
-        // Month yyyy (e.g., December 2024)
-        if (preg_match('/([A-Za-z]+\s+\d{4})/u', $text, $m)) {
-            return $m[1];
+        // Month yyyy (e.g., March 2013)
+        if (preg_match("/($months)\s+\d{4}/iu", $text, $m)) {
+            return $m[0];
         }
 
-        // Fallback: year only
-        if (preg_match('/(\d{4})/u', $text, $m)) {
-            return $m[1];
+        // Fallback: year only (reasonable bounds optional)
+        if (preg_match('/\b(19|20)\d{2}\b/u', $text, $m)) {
+            return $m[0];
         }
 
         return null;

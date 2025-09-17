@@ -138,4 +138,55 @@ class InfoboxParserTest extends TestCase
         $this->assertEqualsCanonicalizing(['The Legend of Zelda', 'Mario (franchise)'], $data['series_link_titles']);
         $this->assertEqualsCanonicalizing(['The Legend of Zelda', 'Mario'], $data['series']);
     }
+
+    public function test_extracts_release_date_from_concatenated_prefix(): void
+    {
+        $html = <<<'HTML'
+        <table class="infobox">
+            <tr>
+                <th>Release date</th>
+                <td>iOSMarch 7, 2013</td>
+            </tr>
+        </table>
+        HTML;
+
+        $parser = new InfoboxParser;
+        $data = $parser->parse($html);
+
+        $this->assertSame('March 7, 2013', $data['release_date']);
+    }
+
+    public function test_extracts_release_date_dd_month_yyyy(): void
+    {
+        $html = <<<'HTML'
+        <table class="infobox">
+            <tr>
+                <th>Release</th>
+                <td>HedgehogJune 23, 1991; EU: 23 June 1991</td>
+            </tr>
+        </table>
+        HTML;
+
+        $parser = new InfoboxParser;
+        $data = $parser->parse($html);
+
+        $this->assertSame('June 23, 1991', $data['release_date']);
+    }
+
+    public function test_extracts_release_date_month_year(): void
+    {
+        $html = <<<'HTML'
+        <table class="infobox">
+            <tr>
+                <th>Released</th>
+                <td>GenesisOctober 1994</td>
+            </tr>
+        </table>
+        HTML;
+
+        $parser = new InfoboxParser;
+        $data = $parser->parse($html);
+
+        $this->assertSame('October 1994', $data['release_date']);
+    }
 }
