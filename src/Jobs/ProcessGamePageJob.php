@@ -97,7 +97,9 @@ class ProcessGamePageJob extends AbstractWikipediaJob
         }));
         foreach ($linkedCompanies as $companyTitle) {
             if ($this->needsDetails(Company::class, $companyTitle)) {
-                ProcessCompanyPageJob::dispatch($companyTitle);
+                ProcessCompanyPageJob::dispatch($companyTitle)
+                    ->onConnection(config('game-scraper.queue_connection'))
+                    ->onQueue(config('game-scraper.queue_name'));
             }
         }
 
@@ -105,7 +107,9 @@ class ProcessGamePageJob extends AbstractWikipediaJob
         $linkedPlatforms = array_unique($data['platforms_link_titles'] ?? []);
         foreach ($linkedPlatforms as $platformTitle) {
             if (is_string($platformTitle) && $platformTitle !== '' && $this->needsDetails(Platform::class, $platformTitle)) {
-                ProcessPlatformPageJob::dispatch($platformTitle);
+                ProcessPlatformPageJob::dispatch($platformTitle)
+                    ->onConnection(config('game-scraper.queue_connection'))
+                    ->onQueue(config('game-scraper.queue_name'));
             }
         }
 
@@ -113,7 +117,9 @@ class ProcessGamePageJob extends AbstractWikipediaJob
         $linkedEngines = array_unique($data['engines_link_titles'] ?? []);
         foreach ($linkedEngines as $engineTitle) {
             if (is_string($engineTitle) && $engineTitle !== '' && $this->needsDetails(Engine::class, $engineTitle)) {
-                ProcessEnginePageJob::dispatch($engineTitle);
+                ProcessEnginePageJob::dispatch($engineTitle)
+                    ->onConnection(config('game-scraper.queue_connection'))
+                    ->onQueue(config('game-scraper.queue_name'));
             }
         }
 
@@ -121,7 +127,9 @@ class ProcessGamePageJob extends AbstractWikipediaJob
         $linkedGenres = array_unique($data['genres_link_titles'] ?? []);
         foreach ($linkedGenres as $genreTitle) {
             if (is_string($genreTitle) && $genreTitle !== '' && $this->needsDetails(Genre::class, $genreTitle)) {
-                ProcessGenrePageJob::dispatch($genreTitle);
+                ProcessGenrePageJob::dispatch($genreTitle)
+                    ->onConnection(config('game-scraper.queue_connection'))
+                    ->onQueue(config('game-scraper.queue_name'));
             }
         }
 
@@ -129,7 +137,9 @@ class ProcessGamePageJob extends AbstractWikipediaJob
         $linkedModes = array_unique($data['modes_link_titles'] ?? []);
         foreach ($linkedModes as $modeTitle) {
             if (is_string($modeTitle) && $modeTitle !== '' && $this->needsDetails(Mode::class, $modeTitle)) {
-                ProcessModePageJob::dispatch($modeTitle);
+                ProcessModePageJob::dispatch($modeTitle)
+                    ->onConnection(config('game-scraper.queue_connection'))
+                    ->onQueue(config('game-scraper.queue_name'));
             }
         }
 
@@ -137,7 +147,9 @@ class ProcessGamePageJob extends AbstractWikipediaJob
         $linkedSeries = array_unique($data['series_link_titles'] ?? []);
         foreach ($linkedSeries as $seriesTitle) {
             if (is_string($seriesTitle) && $seriesTitle !== '' && $this->needsDetails(Series::class, $seriesTitle)) {
-                ProcessSeriesPageJob::dispatch($seriesTitle);
+                ProcessSeriesPageJob::dispatch($seriesTitle)
+                    ->onConnection(config('game-scraper.queue_connection'))
+                    ->onQueue(config('game-scraper.queue_name'));
             }
         }
 
