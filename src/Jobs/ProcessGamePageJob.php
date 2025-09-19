@@ -172,10 +172,10 @@ class ProcessGamePageJob extends AbstractWikipediaJob
                     fn ($n) => is_string($n) && $n !== '' && ! $this->isBracketFootnoteToken($n)
                 ));
             }
-            $hasDevsOrPublishers = ($filteredDevelopers !== []) || ($filteredPublishers !== []);
+            $hasDevsAndPublishers = ($filteredDevelopers !== []) && ($filteredPublishers !== []);
 
             // If there is no existing companies, skip creating anything
-            if (! $hasDevsOrPublishers) {
+            if (! $hasDevsAndPublishers) {
                 return; // exit early: do not create Wikipage or Game
             }
 
@@ -210,17 +210,9 @@ class ProcessGamePageJob extends AbstractWikipediaJob
             ];
 
             if ($game) {
-                // Existing game: update regardless of developers/publishers presence
                 $game->fill($payload)->save();
             } else {
-                // Only create a new game if it has developers and/or publishers
-                if ($hasDevsOrPublishers) {
-                    $game = Game::create($payload);
-                } else {
-                    // No valid developers or publishers: skip creating the game
-                    // Wikipage is updated above only if it existed already
-                    return; // exit transaction early
-                }
+                $game = Game::create($payload);
             }
 
             // Sync relations
