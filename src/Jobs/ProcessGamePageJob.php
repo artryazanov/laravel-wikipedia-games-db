@@ -172,9 +172,10 @@ class ProcessGamePageJob extends AbstractWikipediaJob
                     fn ($n) => is_string($n) && $n !== '' && ! $this->isBracketFootnoteToken($n)
                 ));
             }
+            // Create a game only when BOTH developers and publishers are present
             $hasDevsAndPublishers = ($filteredDevelopers !== []) && ($filteredPublishers !== []);
 
-            // If there is no existing companies, skip creating anything
+            // If either developers or publishers are missing, skip creating anything
             if (! $hasDevsAndPublishers) {
                 return; // exit early: do not create Wikipage or Game
             }

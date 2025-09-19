@@ -86,6 +86,7 @@ class ProcessGamePageJobTest extends TestCase
                 // No cover_image_url here to trigger fallback
                 // Include at least one company so a new game is created
                 'developers' => ['Fallback Studios'],
+                'publishers' => ['Fallback Publishing'],
             ]);
         });
 

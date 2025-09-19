@@ -36,6 +36,7 @@ class ProcessGamePageJobReusesExistingTaxonomiesTest extends TestCase
                 'genres' => ['Shooter', 'RPG'],
                 // Include at least one company so a new game is created on first run
                 'developers' => ['Existing Dev'],
+                'publishers' => ['Existing Pub'],
             ]);
         });
 

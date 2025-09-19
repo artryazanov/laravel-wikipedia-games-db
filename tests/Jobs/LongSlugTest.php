@@ -35,6 +35,7 @@ class LongSlugTest extends TestCase
                 'cover_image_url' => 'https://example/img.jpg',
                 // Ensure the game is created under new rule
                 'developers' => ['Very Long Name Dev'],
+                'publishers' => ['Very Long Name Pub'],
             ]);
         });
 
