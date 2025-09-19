@@ -19,15 +19,15 @@ return new class extends Migration
         DB::table('wikipedia_games as g')
             ->leftJoin('wikipedia_game_game_company as gdev', function ($join) {
                 $join->on('gdev.game_id', '=', 'g.id')
-                     ->where('gdev.role', '=', 'developer');
+                    ->where('gdev.role', '=', 'developer');
             })
             ->leftJoin('wikipedia_game_game_company as gpub', function ($join) {
                 $join->on('gpub.game_id', '=', 'g.id')
-                     ->where('gpub.role', '=', 'publisher');
+                    ->where('gpub.role', '=', 'publisher');
             })
             ->where(function ($q) {
                 $q->whereNull('gdev.game_id')
-                  ->orWhereNull('gpub.game_id');
+                    ->orWhereNull('gpub.game_id');
             })
             ->orderBy('g.id')
             ->select('g.id as id', 'g.wikipage_id as wikipage_id')
@@ -94,4 +94,3 @@ return new class extends Migration
         // Non-reversible cleanup.
     }
 };
-
