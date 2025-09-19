@@ -19,7 +19,7 @@ return new class extends Migration
         DB::table('wikipedia_games as g')
             ->leftJoin('wikipedia_game_game_company as gcc', function ($join) {
                 $join->on('gcc.game_id', '=', 'g.id')
-                     ->whereIn('gcc.role', ['developer', 'publisher']);
+                    ->whereIn('gcc.role', ['developer', 'publisher']);
             })
             ->whereNull('gcc.game_id')
             ->orderBy('g.id')

@@ -77,4 +77,3 @@ class RemoveGamesWithoutCompaniesTest extends TestCase
         $this->assertDatabaseHas('wikipedia_game_wikipages', ['id' => $wikipageId]);
     }
 }
-
