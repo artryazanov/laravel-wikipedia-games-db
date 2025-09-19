@@ -41,4 +41,3 @@ class ProcessGamePageJobSkipCreationWithoutCompaniesTest extends TestCase
         $this->assertSame(0, Wikipage::count());
     }
 }
-
