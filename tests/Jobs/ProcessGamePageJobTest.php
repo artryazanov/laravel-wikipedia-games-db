@@ -84,6 +84,8 @@ class ProcessGamePageJobTest extends TestCase
             $mock->shouldReceive('parse')->once()->andReturn([
                 'release_date' => '2001-01-01',
                 // No cover_image_url here to trigger fallback
+                // Include at least one company so a new game is created
+                'developers' => ['Fallback Studios'],
             ]);
         });
 

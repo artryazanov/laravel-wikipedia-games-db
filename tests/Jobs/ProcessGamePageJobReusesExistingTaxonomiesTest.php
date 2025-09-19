@@ -34,6 +34,8 @@ class ProcessGamePageJobReusesExistingTaxonomiesTest extends TestCase
             $mock->shouldReceive('parse')->twice()->andReturn([
                 'release_date' => '2000-01-01',
                 'genres' => ['Shooter', 'RPG'],
+                // Include at least one company so a new game is created on first run
+                'developers' => ['Existing Dev'],
             ]);
         });
 

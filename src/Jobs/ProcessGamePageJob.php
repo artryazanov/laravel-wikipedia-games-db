@@ -157,7 +157,29 @@ class ProcessGamePageJob extends AbstractWikipediaJob
             // Build wikipedia_url from title
             $wikipediaUrl = 'https://en.wikipedia.org/wiki/'.str_replace(' ', '_', $this->pageTitle);
 
-            // Upsert Wikipage by URL (preferred) or title
+            // Prepare filtered developers/publishers to determine if a new game can be created
+            $filteredDevelopers = [];
+            if (! empty($data['developers']) && is_array($data['developers'])) {
+                $filteredDevelopers = array_values(array_filter(
+                    $data['developers'],
+                    fn ($n) => is_string($n) && $n !== '' && ! $this->isBracketFootnoteToken($n)
+                ));
+            }
+            $filteredPublishers = [];
+            if (! empty($data['publishers']) && is_array($data['publishers'])) {
+                $filteredPublishers = array_values(array_filter(
+                    $data['publishers'],
+                    fn ($n) => is_string($n) && $n !== '' && ! $this->isBracketFootnoteToken($n)
+                ));
+            }
+            $hasDevsOrPublishers = ($filteredDevelopers !== []) || ($filteredPublishers !== []);
+
+            // If there is no existing companies, skip creating anything
+            if (! $hasDevsOrPublishers) {
+                return; // exit early: do not create Wikipage or Game
+            }
+
+            // Find existing Wikipage by URL (preferred) or title, but don't create yet
             $wikipage = Wikipage::where('wikipedia_url', $wikipediaUrl)
                 ->orWhere('title', $this->pageTitle)
                 ->first();
@@ -169,9 +191,11 @@ class ProcessGamePageJob extends AbstractWikipediaJob
                 'wikitext' => $wikitext,
             ];
 
+            // Upsert Wikipage only when it already exists or when we're creating a new game
             if ($wikipage) {
                 $wikipage->fill($wikipagePayload)->save();
             } else {
+                // No wikipage yet, but we know we have companies, so we will create a new game
                 $wikipage = Wikipage::create($wikipagePayload);
             }
 
@@ -186,9 +210,17 @@ class ProcessGamePageJob extends AbstractWikipediaJob
             ];
 
             if ($game) {
+                // Existing game: update regardless of developers/publishers presence
                 $game->fill($payload)->save();
             } else {
-                $game = Game::create($payload);
+                // Only create a new game if it has developers and/or publishers
+                if ($hasDevsOrPublishers) {
+                    $game = Game::create($payload);
+                } else {
+                    // No valid developers or publishers: skip creating the game
+                    // Wikipage is updated above only if it existed already
+                    return; // exit transaction early
+                }
             }
 
             // Sync relations
@@ -218,18 +250,14 @@ class ProcessGamePageJob extends AbstractWikipediaJob
             }
 
             $companySync = [];
-            if (! empty($data['developers']) && is_array($data['developers'])) {
-                // Filter out tokens like "[a]", "[b]"
-                $developers = array_values(array_filter($data['developers'], fn ($n) => is_string($n) && $n !== '' && ! $this->isBracketFootnoteToken($n)));
-                $devIds = $this->getIdsFor(Company::class, $developers);
+            if ($filteredDevelopers !== []) {
+                $devIds = $this->getIdsFor(Company::class, $filteredDevelopers);
                 foreach ($devIds as $id) {
                     $companySync[$id] = ['role' => 'developer'];
                 }
             }
-            if (! empty($data['publishers']) && is_array($data['publishers'])) {
-                // Filter out tokens like "[a]", "[b]"
-                $publishers = array_values(array_filter($data['publishers'], fn ($n) => is_string($n) && $n !== '' && ! $this->isBracketFootnoteToken($n)));
-                $pubIds = $this->getIdsFor(Company::class, $publishers);
+            if ($filteredPublishers !== []) {
+                $pubIds = $this->getIdsFor(Company::class, $filteredPublishers);
                 foreach ($pubIds as $id) {
                     $companySync[$id] = ['role' => 'publisher'];
                 }

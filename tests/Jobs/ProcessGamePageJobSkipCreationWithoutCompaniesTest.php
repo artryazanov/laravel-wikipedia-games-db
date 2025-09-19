@@ -4,46 +4,41 @@ namespace Tests\Jobs;
 
 use Artryazanov\WikipediaGamesDb\Jobs\ProcessGamePageJob;
 use Artryazanov\WikipediaGamesDb\Models\Game;
+use Artryazanov\WikipediaGamesDb\Models\Wikipage;
 use Artryazanov\WikipediaGamesDb\Services\InfoboxParser;
 use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class LongSlugTest extends TestCase
+class ProcessGamePageJobSkipCreationWithoutCompaniesTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_extremely_long_taxonomy_names_do_not_overflow_slug_column(): void
+    public function test_does_not_create_wikipage_or_game_without_companies(): void
     {
-
-        $title = 'Very Long Slug Game';
+        $title = 'Game Without Companies';
         $html = '<html></html>';
-
-        $longName = str_repeat('Very Long Name Segment ', 30); // > 600 chars before slugging
 
         $client = $this->mock(MediaWikiClient::class, function ($mock) use ($title, $html) {
             $mock->shouldReceive('getPageHtml')->once()->with($title)->andReturn($html);
+            $mock->shouldReceive('getPageMainImage')->andReturn(null);
             $mock->shouldReceive('getPageLeadDescription')->once()->with($title)->andReturn('Lead');
             $mock->shouldReceive('getPageWikitext')->once()->with($title)->andReturn('WT');
         });
 
-        $parser = $this->mock(InfoboxParser::class, function ($mock) use ($longName) {
+        // Parser returns no developers/publishers
+        $parser = $this->mock(InfoboxParser::class, function ($mock) {
             $mock->shouldReceive('parse')->once()->andReturn([
-                'description' => 'Desc',
                 'release_date' => '2000-01-01',
-                'genres' => [$longName],
-                'cover_image_url' => 'https://example/img.jpg',
-                // Ensure the game is created under new rule
-                'developers' => ['Very Long Name Dev'],
+                'genres' => ['Shooter'],
+                // No developers or publishers keys
             ]);
         });
 
         (new ProcessGamePageJob($title))->handle($client, $parser);
 
-        $game = Game::with('wikipage')->first();
-        $this->assertNotNull($game);
-        $this->assertSame('Lead', $game->wikipage->description);
-        // Ensure the related genre record exists and queryable via relationship
-        $this->assertSame(1, $game->genres()->count());
+        $this->assertSame(0, Game::count());
+        $this->assertSame(0, Wikipage::count());
     }
 }
+
