@@ -416,4 +416,41 @@ class MediaWikiClient
 
         return is_string($wt) && $wt !== '' ? $wt : null;
     }
+
+    /**
+     * Determine if the provided page title is a redirect.
+     * Uses action=query with redirects=1 and inspects query.redirects mapping.
+     */
+    public function isRedirect(string $pageTitle): bool
+    {
+        $params = [
+            'action' => 'query',
+            'format' => 'json',
+            'titles' => $pageTitle,
+            'redirects' => 1,
+        ];
+
+        $resp = $this->http->get('', $params);
+        if ($resp->failed()) {
+            Log::info('MediaWiki redirect check failed', [
+                'status' => $resp->status(),
+                'body' => $resp->body(),
+            ]);
+
+            return false;
+        }
+
+        $data = $resp->json();
+        $redirects = Arr::get($data, 'query.redirects', []);
+        if (is_array($redirects)) {
+            foreach ($redirects as $redir) {
+                $from = (string) ($redir['from'] ?? '');
+                if ($from !== '' && strcasecmp($from, $pageTitle) === 0) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
 }

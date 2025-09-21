@@ -59,6 +59,20 @@ class ProcessGamePageJob extends AbstractWikipediaJob
             ]);
         }
 
+        // Skip redirect pages: we only process canonical article pages
+        try {
+            if ($client->isRedirect($this->pageTitle)) {
+                Log::info('Skipping redirect page', ['title' => $this->pageTitle]);
+
+                return;
+            }
+        } catch (\Throwable $e) {
+            Log::debug('Redirect check error; continuing', [
+                'title' => $this->pageTitle,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         $html = $client->getPageHtml($this->pageTitle);
         if (! $html) {
             $this->fail(new \RuntimeException("Failed to fetch HTML for page: {$this->pageTitle}"));

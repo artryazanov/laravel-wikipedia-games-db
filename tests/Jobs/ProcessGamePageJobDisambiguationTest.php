@@ -31,4 +31,23 @@ class ProcessGamePageJobDisambiguationTest extends TestCase
 
         $this->assertSame(0, Game::count());
     }
+
+    public function test_skips_processing_when_page_is_redirect(): void
+    {
+        $title = 'Some Redirecting Title';
+
+        $client = $this->mock(MediaWikiClient::class, function ($mock) use ($title) {
+            $mock->shouldReceive('isDisambiguation')->once()->with($title)->andReturn(false);
+            $mock->shouldReceive('isRedirect')->once()->with($title)->andReturn(true);
+            $mock->shouldReceive('getPageHtml')->never();
+        });
+
+        $parser = $this->mock(InfoboxParser::class, function ($mock) {
+            $mock->shouldReceive('parse')->never();
+        });
+
+        (new ProcessGamePageJob($title))->handle($client, $parser);
+
+        $this->assertSame(0, Game::count());
+    }
 }
