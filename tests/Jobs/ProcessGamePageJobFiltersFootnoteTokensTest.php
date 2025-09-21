@@ -35,6 +35,9 @@ class ProcessGamePageJobFiltersFootnoteTokensTest extends TestCase
                 // Raw names contain bracket tokens that must be ignored
                 'developers' => ['id Software', '[a]'],
                 'publishers' => ['[1]', 'GT Interactive'],
+                // Include minimal required fields for persistence
+                'release_date' => '2000-01-01',
+                'genres' => ['Action'],
                 // Link titles also contain tokens to be filtered out
                 'developers_link_titles' => ['Id Software', '[b]'],
                 'publishers_link_titles' => ['[c]', 'GT Interactive'],

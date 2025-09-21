@@ -172,11 +172,23 @@ class ProcessGamePageJob extends AbstractWikipediaJob
                     fn ($n) => is_string($n) && $n !== '' && ! $this->isBracketFootnoteToken($n)
                 ));
             }
-            // Create a game only when BOTH developers and publishers are present
-            $hasDevsAndPublishers = ($filteredDevelopers !== []) && ($filteredPublishers !== []);
+            // Create a game only when required fields are present: developers, publishers, release year, and genres
+            $filteredGenres = [];
+            if (! empty($data['genres']) && is_array($data['genres'])) {
+                $filteredGenres = array_values(array_filter(
+                    $data['genres'],
+                    fn ($n) => is_string($n) && $n !== '' && ! $this->isBracketFootnoteToken($n)
+                ));
+            }
+            $hasRequiredFields = (
+                ($filteredDevelopers !== []) &&
+                ($filteredPublishers !== []) &&
+                ($releaseYear !== null) &&
+                ($filteredGenres !== [])
+            );
 
-            // If either developers or publishers are missing, skip creating anything
-            if (! $hasDevsAndPublishers) {
+            // If any required field is missing, skip creating anything
+            if (! $hasRequiredFields) {
                 return; // exit early: do not create Wikipage or Game
             }
 

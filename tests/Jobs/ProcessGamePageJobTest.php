@@ -87,6 +87,8 @@ class ProcessGamePageJobTest extends TestCase
                 // Include at least one company so a new game is created
                 'developers' => ['Fallback Studios'],
                 'publishers' => ['Fallback Publishing'],
+                // Include genres to satisfy stricter creation guard
+                'genres' => ['Action'],
             ]);
         });
 

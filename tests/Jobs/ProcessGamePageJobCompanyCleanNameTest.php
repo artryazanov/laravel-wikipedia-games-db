@@ -33,6 +33,8 @@ class ProcessGamePageJobCompanyCleanNameTest extends TestCase
             $mock->shouldReceive('parse')->once()->andReturn([
                 'developers' => ['Valve (company)'],
                 'publishers' => ['Nintendo   '],
+                'release_date' => '2001-02-03',
+                'genres' => ['Action-Adventure'],
             ]);
         });
 
