@@ -53,6 +53,7 @@ class MediaWikiClientTest extends TestCase
 
         Http::assertSentCount(1);
     }
+
     public function test_get_all_pages_sends_user_agent_and_params_and_parses_response(): void
     {
         Http::fake([
