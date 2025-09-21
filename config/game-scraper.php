@@ -13,6 +13,9 @@ return [
     // Delay between API requests in milliseconds (throttling)
     'throttle_milliseconds' => (int) env('WIKIPEDIA_GAMES_DB_THROTTLE_MS', 1000),
 
+    // Default per-batch page fetch limit for SyncGamesCommand and jobs
+    'limit' => (int) env('WIKIPEDIA_GAMES_DB_LIMIT', 100),
+
     // Queue settings
     'queue_connection' => env('WIKIPEDIA_GAMES_DB_QUEUE_CONNECTION', null), // null means use the default connection
     'queue_name' => env('WIKIPEDIA_GAMES_DB_QUEUE_NAME', 'default'),

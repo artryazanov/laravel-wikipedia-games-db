@@ -195,6 +195,55 @@ class MediaWikiClient
     }
 
     /**
+     * List all pages in the main namespace using list=allpages.
+     * Returns ['pages' => array<int, array{title: string, ns: int}>, 'continue' => string|null] or null on failure.
+     */
+    public function getAllPages(int $limit = 100, ?string $continueToken = null): ?array
+    {
+        $limit = max(1, min(500, $limit));
+        $params = [
+            'action' => 'query',
+            'format' => 'json',
+            'list' => 'allpages',
+            'aplimit' => $limit,
+            'apnamespace' => 0,
+        ];
+        if ($continueToken) {
+            $params['apcontinue'] = $continueToken;
+        }
+
+        $response = $this->http->get('', $params);
+        if ($response->failed()) {
+            Log::warning('MediaWiki getAllPages failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            return null;
+        }
+
+        $data = $response->json();
+        if (isset($data['error'])) {
+            Log::warning('MediaWiki getAllPages API error', $data['error']);
+
+            return null;
+        }
+
+        $pages = Arr::get($data, 'query.allpages', []);
+        $cont = Arr::get($data, 'continue.apcontinue');
+
+        return [
+            'pages' => array_map(function ($p) {
+                return [
+                    'title' => (string) ($p['title'] ?? ''),
+                    'ns' => (int) ($p['ns'] ?? 0),
+                ];
+            }, $pages),
+            'continue' => $cont ?? null,
+        ];
+    }
+
+    /**
      * Fetch members of a given Wikipedia category.
      * Returns an array with keys: 'members' => [], 'continue' => string|null
      */

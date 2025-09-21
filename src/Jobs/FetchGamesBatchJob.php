@@ -2,7 +2,7 @@
 
 namespace Artryazanov\WikipediaGamesDb\Jobs;
 
-use Illuminate\Support\Facades\Http;
+use Artryazanov\WikipediaGamesDb\Services\MediaWikiClient;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -29,30 +29,20 @@ class FetchGamesBatchJob extends AbstractWikipediaJob
     public function handle(): void
     {
         $this->executeWithThrottle(function () {
-            $apiUrl = (string) config('game-scraper.api_endpoint'); // e.g. https://en.wikipedia.org/w/api.php
-
             Log::info('Wikipedia FetchGamesBatchJob: fetching', [
                 'apcontinue' => $this->apcontinue,
                 'limit' => $this->limit,
             ]);
 
-            $params = [
-                'action' => 'query',
-                'list' => 'allpages',
-                'aplimit' => $this->limit,
-                'apnamespace' => '0', // main/article namespace only
-                'format' => 'json',
-            ];
-            if ($this->apcontinue) {
-                $params['apcontinue'] = $this->apcontinue;
-            }
+            $client = new MediaWikiClient(
+                (string) config('game-scraper.api_endpoint'),
+                (string) config('game-scraper.user_agent')
+            );
 
-            $response = Http::timeout(30)->get($apiUrl, $params);
+            $result = $client->getAllPages($this->limit, $this->apcontinue);
 
-            if (! $response->ok()) {
+            if ($result === null) {
                 Log::error('Wikipedia API request failed', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
                     'apcontinue' => $this->apcontinue,
                     'limit' => $this->limit,
                 ]);
@@ -60,15 +50,8 @@ class FetchGamesBatchJob extends AbstractWikipediaJob
                 return; // Fail softly; the queue can retry if configured
             }
 
-            $data = $response->json();
-
-            if (isset($data['error'])) {
-                Log::error('Wikipedia API error', $data['error']);
-
-                return;
-            }
-
-            $pages = $data['query']['allpages'] ?? [];
+            $pages = $result['pages'] ?? [];
+            $nextToken = $result['continue'] ?? null;
 
             if (empty($pages)) {
                 Log::info('Wikipedia FetchGamesBatchJob: no more records to process', [
@@ -97,7 +80,6 @@ class FetchGamesBatchJob extends AbstractWikipediaJob
             ]);
 
             // Chain next batch while API provides continuation token
-            $nextToken = $data['continue']['apcontinue'] ?? null;
             if ($nextToken) {
                 self::dispatch($this->limit, $nextToken)
                     ->onConnection(config('game-scraper.queue_connection'))

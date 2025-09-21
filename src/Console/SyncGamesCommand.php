@@ -22,7 +22,7 @@ class SyncGamesCommand extends Command
      */
     public function handle(): int
     {
-        $defaultLimit = (int) config('game-scraper.limit', 100);
+        $defaultLimit = (int) config('game-scraper.limit', 50);
         $limit = (int) ($this->option('limit') ?: $defaultLimit);
         $apcontinue = $this->option('apcontinue') ?: null;
 
