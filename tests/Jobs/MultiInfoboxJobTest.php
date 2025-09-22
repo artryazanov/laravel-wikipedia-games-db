@@ -61,7 +61,7 @@ HTML;
             $mock->shouldReceive('getPageWikitext')->once()->with($title)->andReturn('Wikitext multi');
         });
 
-        $parser = new InfoboxParser();
+        $parser = new InfoboxParser;
 
         (new ProcessGamePageJob($title))->handle($client, $parser);
 
@@ -136,7 +136,7 @@ HTML;
             $mock->shouldReceive('getPageWikitext')->once()->with($title)->andReturn('WT');
         });
 
-        $parser = new InfoboxParser();
+        $parser = new InfoboxParser;
 
         (new ProcessGamePageJob($title))->handle($client, $parser);
 
@@ -190,7 +190,7 @@ HTML;
             $mock->shouldReceive('getPageWikitext')->once()->with($title)->andReturn('WT twice');
         });
 
-        $parser = new InfoboxParser();
+        $parser = new InfoboxParser;
 
         (new ProcessGamePageJob($title))->handle($client, $parser);
         (new ProcessGamePageJob($title))->handle($client, $parser);
