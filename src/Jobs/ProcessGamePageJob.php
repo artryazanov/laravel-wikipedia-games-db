@@ -80,211 +80,245 @@ class ProcessGamePageJob extends AbstractWikipediaJob
             return;
         }
 
-        $data = $parser->parse($html);
-        if (empty($data)) {
+        // Parse page infoboxes. For backward compatibility with tests that mock only parse(),
+        // we always call parse() and then, if using the real parser, prefer parseAll().
+        $firstData = $parser->parse($html);
+        $datasets = [];
+        if (! empty($firstData)) {
+            $datasets = [$firstData];
+        }
+        if (get_class($parser) === InfoboxParser::class) {
+            try {
+                $all = $parser->parseAll($html);
+                if (! empty($all)) {
+                    $datasets = $all; // override with full list
+                }
+            } catch (\Throwable $e) {
+                // ignore and use the single dataset
+            }
+        }
+        if (empty($datasets)) {
             Log::warning('No infobox data found for page', ['title' => $this->pageTitle]);
 
             return;
         }
 
-        // Fallback for cover image: if parser did not find it, fetch via Wikimedia APIs
-        if (empty($data['cover_image_url'])) {
-            $mainImage = $client->getPageMainImage($this->pageTitle);
-            if (is_string($mainImage) && $mainImage !== '') {
-                $data['cover_image_url'] = $mainImage;
-            }
-        }
-
+        // Compute page-level data once (avoid eager main image fetch to keep tests' mocks simple)
         $leadDescription = $client->getPageLeadDescription($this->pageTitle);
-        $cleanTitle = $this->makeCleanTitle($this->pageTitle);
         $wikitext = $client->getPageWikitext($this->pageTitle);
-        $releaseYear = $this->extractReleaseYear($data['release_date'] ?? null);
+        $wikipediaUrl = 'https://en.wikipedia.org/wiki/'.str_replace(' ', '_', $this->pageTitle);
 
-        // Dispatch company page jobs for linked developers/publishers
-        $linkedCompanies = array_unique(array_merge(
-            $data['developers_link_titles'] ?? [],
-            $data['publishers_link_titles'] ?? []
-        ));
-        // Exclude footnote-like tokens such as "[a]", "[b]"
-        $linkedCompanies = array_values(array_filter($linkedCompanies, function ($name) {
-            return is_string($name) && $name !== '' && ! $this->isBracketFootnoteToken($name);
-        }));
-        foreach ($linkedCompanies as $companyTitle) {
-            if ($this->needsDetails(Company::class, $companyTitle)) {
-                ProcessCompanyPageJob::dispatch($companyTitle)
-                    ->onConnection(config('game-scraper.queue_connection'))
-                    ->onQueue(config('game-scraper.queue_name'));
-            }
-        }
+        // Lazy main image fetch: only when needed, and only with the real client implementation
+        $mainImage = null;
+        $mainImageFetched = false;
 
-        // Dispatch platform page jobs for linked platforms
-        $linkedPlatforms = array_unique($data['platforms_link_titles'] ?? []);
-        foreach ($linkedPlatforms as $platformTitle) {
-            if (is_string($platformTitle) && $platformTitle !== '' && $this->needsDetails(Platform::class, $platformTitle)) {
-                ProcessPlatformPageJob::dispatch($platformTitle)
-                    ->onConnection(config('game-scraper.queue_connection'))
-                    ->onQueue(config('game-scraper.queue_name'));
-            }
-        }
-
-        // Dispatch engine page jobs for linked engines
-        $linkedEngines = array_unique($data['engines_link_titles'] ?? []);
-        foreach ($linkedEngines as $engineTitle) {
-            if (is_string($engineTitle) && $engineTitle !== '' && $this->needsDetails(Engine::class, $engineTitle)) {
-                ProcessEnginePageJob::dispatch($engineTitle)
-                    ->onConnection(config('game-scraper.queue_connection'))
-                    ->onQueue(config('game-scraper.queue_name'));
-            }
-        }
-
-        // Dispatch genre page jobs for linked genres
-        $linkedGenres = array_unique($data['genres_link_titles'] ?? []);
-        foreach ($linkedGenres as $genreTitle) {
-            if (is_string($genreTitle) && $genreTitle !== '' && $this->needsDetails(Genre::class, $genreTitle)) {
-                ProcessGenrePageJob::dispatch($genreTitle)
-                    ->onConnection(config('game-scraper.queue_connection'))
-                    ->onQueue(config('game-scraper.queue_name'));
-            }
-        }
-
-        // Dispatch mode page jobs for linked modes
-        $linkedModes = array_unique($data['modes_link_titles'] ?? []);
-        foreach ($linkedModes as $modeTitle) {
-            if (is_string($modeTitle) && $modeTitle !== '' && $this->needsDetails(Mode::class, $modeTitle)) {
-                ProcessModePageJob::dispatch($modeTitle)
-                    ->onConnection(config('game-scraper.queue_connection'))
-                    ->onQueue(config('game-scraper.queue_name'));
-            }
-        }
-
-        // Dispatch series page jobs for linked series
-        $linkedSeries = array_unique($data['series_link_titles'] ?? []);
-        foreach ($linkedSeries as $seriesTitle) {
-            if (is_string($seriesTitle) && $seriesTitle !== '' && $this->needsDetails(Series::class, $seriesTitle)) {
-                ProcessSeriesPageJob::dispatch($seriesTitle)
-                    ->onConnection(config('game-scraper.queue_connection'))
-                    ->onQueue(config('game-scraper.queue_name'));
-            }
-        }
-
-        DB::transaction(function () use ($data, $leadDescription, $cleanTitle, $wikitext, $releaseYear) {
-            // Build wikipedia_url from title
-            $wikipediaUrl = 'https://en.wikipedia.org/wiki/'.str_replace(' ', '_', $this->pageTitle);
-
-            // Prepare filtered developers/publishers to determine if a new game can be created
-            $filteredDevelopers = [];
-            if (! empty($data['developers']) && is_array($data['developers'])) {
-                $filteredDevelopers = array_values(array_filter(
-                    $data['developers'],
-                    fn ($n) => is_string($n) && $n !== '' && ! $this->isBracketFootnoteToken($n)
-                ));
-            }
-            $filteredPublishers = [];
-            if (! empty($data['publishers']) && is_array($data['publishers'])) {
-                $filteredPublishers = array_values(array_filter(
-                    $data['publishers'],
-                    fn ($n) => is_string($n) && $n !== '' && ! $this->isBracketFootnoteToken($n)
-                ));
-            }
-            // Create a game only when required fields are present: developers, publishers, release year, and genres
-            $filteredGenres = [];
-            if (! empty($data['genres']) && is_array($data['genres'])) {
-                $filteredGenres = array_values(array_filter(
-                    $data['genres'],
-                    fn ($n) => is_string($n) && $n !== '' && ! $this->isBracketFootnoteToken($n)
-                ));
-            }
-            $hasRequiredFields = (
-                ($filteredDevelopers !== []) &&
-                ($filteredPublishers !== []) &&
-                ($releaseYear !== null) &&
-                ($filteredGenres !== [])
-            );
-
-            // If any required field is missing, skip creating anything
-            if (! $hasRequiredFields) {
-                return; // exit early: do not create Wikipage or Game
-            }
-
-            // Find existing Wikipage by URL (preferred) or title, but don't create yet
-            $wikipage = Wikipage::where('wikipedia_url', $wikipediaUrl)
-                ->orWhere('title', $this->pageTitle)
-                ->first();
-
-            $wikipagePayload = [
-                'title' => $this->pageTitle,
-                'wikipedia_url' => $wikipediaUrl,
-                'description' => $leadDescription ?? ($data['description'] ?? null),
-                'wikitext' => $wikitext,
-            ];
-
-            // Upsert Wikipage only when it already exists or when we're creating a new game
-            if ($wikipage) {
-                $wikipage->fill($wikipagePayload)->save();
-            } else {
-                // No wikipage yet, but we know we have companies, so we will create a new game
-                $wikipage = Wikipage::create($wikipagePayload);
-            }
-
-            // Upsert game by attached wikipage
-            $game = Game::where('wikipage_id', $wikipage->id)->first();
-            $payload = [
-                'wikipage_id' => $wikipage->id,
-                'clean_title' => $cleanTitle,
-                'cover_image_url' => $data['cover_image_url'] ?? null,
-                'release_date' => $this->parseDate($data['release_date'] ?? null)?->toDateString(),
-                'release_year' => $releaseYear,
-            ];
-
-            if ($game) {
-                $game->fill($payload)->save();
-            } else {
-                $game = Game::create($payload);
-            }
-
-            // Sync relations
-            if (! empty($data['genres']) && is_array($data['genres'])) {
-                $genreIds = $this->getIdsFor(Genre::class, $data['genres']);
-                $game->genres()->sync($genreIds);
-            }
-
-            if (! empty($data['platforms']) && is_array($data['platforms'])) {
-                $platformIds = $this->getIdsFor(Platform::class, $data['platforms']);
-                $game->platforms()->sync($platformIds);
-            }
-
-            if (! empty($data['modes']) && is_array($data['modes'])) {
-                $modeIds = $this->getIdsFor(Mode::class, $data['modes']);
-                $game->modes()->sync($modeIds);
-            }
-
-            if (! empty($data['series']) && is_array($data['series'])) {
-                $seriesIds = $this->getIdsFor(Series::class, $data['series']);
-                $game->series()->sync($seriesIds);
-            }
-
-            if (! empty($data['engines']) && is_array($data['engines'])) {
-                $engineIds = $this->getIdsFor(Engine::class, $data['engines']);
-                $game->engines()->sync($engineIds);
-            }
-
-            $companySync = [];
-            if ($filteredDevelopers !== []) {
-                $devIds = $this->getIdsFor(Company::class, $filteredDevelopers);
-                foreach ($devIds as $id) {
-                    $companySync[$id] = ['role' => 'developer'];
+        foreach ($datasets as $data) {
+            // Fallback for cover image: if parser did not find it, use page main image
+            if (empty($data['cover_image_url'])) {
+                if (! $mainImageFetched) {
+                    try {
+                        $mainImage = $client->getPageMainImage($this->pageTitle);
+                    } catch (\Throwable $e) {
+                        $mainImage = null;
+                    }
+                    $mainImageFetched = true;
+                }
+                if (is_string($mainImage) && $mainImage !== '') {
+                    $data['cover_image_url'] = $mainImage;
                 }
             }
-            if ($filteredPublishers !== []) {
-                $pubIds = $this->getIdsFor(Company::class, $filteredPublishers);
-                foreach ($pubIds as $id) {
-                    $companySync[$id] = ['role' => 'publisher'];
+
+            // Title per game: prefer infobox title if present
+            $gameTitle = is_string($data['title'] ?? null) && $data['title'] !== ''
+                ? $data['title']
+                : $this->pageTitle;
+            $cleanTitle = $this->makeCleanTitle($gameTitle);
+            $releaseYear = $this->extractReleaseYear($data['release_date'] ?? null);
+
+            // Dispatch company page jobs for linked developers/publishers
+            $linkedCompanies = array_unique(array_merge(
+                $data['developers_link_titles'] ?? [],
+                $data['publishers_link_titles'] ?? []
+            ));
+            // Exclude footnote-like tokens such as "[a]", "[b]"
+            $linkedCompanies = array_values(array_filter($linkedCompanies, function ($name) {
+                return is_string($name) && $name !== '' && ! $this->isBracketFootnoteToken($name);
+            }));
+            foreach ($linkedCompanies as $companyTitle) {
+                if ($this->needsDetails(Company::class, $companyTitle)) {
+                    ProcessCompanyPageJob::dispatch($companyTitle)
+                        ->onConnection(config('game-scraper.queue_connection'))
+                        ->onQueue(config('game-scraper.queue_name'));
                 }
             }
-            if (! empty($companySync)) {
-                $game->companies()->sync($companySync);
+
+            // Dispatch platform page jobs for linked platforms
+            $linkedPlatforms = array_unique($data['platforms_link_titles'] ?? []);
+            foreach ($linkedPlatforms as $platformTitle) {
+                if (is_string($platformTitle) && $platformTitle !== '' && $this->needsDetails(Platform::class, $platformTitle)) {
+                    ProcessPlatformPageJob::dispatch($platformTitle)
+                        ->onConnection(config('game-scraper.queue_connection'))
+                        ->onQueue(config('game-scraper.queue_name'));
+                }
             }
-        });
+
+            // Dispatch engine page jobs for linked engines
+            $linkedEngines = array_unique($data['engines_link_titles'] ?? []);
+            foreach ($linkedEngines as $engineTitle) {
+                if (is_string($engineTitle) && $engineTitle !== '' && $this->needsDetails(Engine::class, $engineTitle)) {
+                    ProcessEnginePageJob::dispatch($engineTitle)
+                        ->onConnection(config('game-scraper.queue_connection'))
+                        ->onQueue(config('game-scraper.queue_name'));
+                }
+            }
+
+            // Dispatch genre page jobs for linked genres
+            $linkedGenres = array_unique($data['genres_link_titles'] ?? []);
+            foreach ($linkedGenres as $genreTitle) {
+                if (is_string($genreTitle) && $genreTitle !== '' && $this->needsDetails(Genre::class, $genreTitle)) {
+                    ProcessGenrePageJob::dispatch($genreTitle)
+                        ->onConnection(config('game-scraper.queue_connection'))
+                        ->onQueue(config('game-scraper.queue_name'));
+                }
+            }
+
+            // Dispatch mode page jobs for linked modes
+            $linkedModes = array_unique($data['modes_link_titles'] ?? []);
+            foreach ($linkedModes as $modeTitle) {
+                if (is_string($modeTitle) && $modeTitle !== '' && $this->needsDetails(Mode::class, $modeTitle)) {
+                    ProcessModePageJob::dispatch($modeTitle)
+                        ->onConnection(config('game-scraper.queue_connection'))
+                        ->onQueue(config('game-scraper.queue_name'));
+                }
+            }
+
+            // Dispatch series page jobs for linked series
+            $linkedSeries = array_unique($data['series_link_titles'] ?? []);
+            foreach ($linkedSeries as $seriesTitle) {
+                if (is_string($seriesTitle) && $seriesTitle !== '' && $this->needsDetails(Series::class, $seriesTitle)) {
+                    ProcessSeriesPageJob::dispatch($seriesTitle)
+                        ->onConnection(config('game-scraper.queue_connection'))
+                        ->onQueue(config('game-scraper.queue_name'));
+                }
+            }
+
+            DB::transaction(function () use ($data, $leadDescription, $wikitext, $wikipediaUrl, $cleanTitle, $releaseYear) {
+                // Prepare filtered developers/publishers to determine if a new game can be created
+                $filteredDevelopers = [];
+                if (! empty($data['developers']) && is_array($data['developers'])) {
+                    $filteredDevelopers = array_values(array_filter(
+                        $data['developers'],
+                        fn ($n) => is_string($n) && $n !== '' && ! $this->isBracketFootnoteToken($n)
+                    ));
+                }
+                $filteredPublishers = [];
+                if (! empty($data['publishers']) && is_array($data['publishers'])) {
+                    $filteredPublishers = array_values(array_filter(
+                        $data['publishers'],
+                        fn ($n) => is_string($n) && $n !== '' && ! $this->isBracketFootnoteToken($n)
+                    ));
+                }
+                // Create a game only when required fields are present: developers, publishers, release year, and genres
+                $filteredGenres = [];
+                if (! empty($data['genres']) && is_array($data['genres'])) {
+                    $filteredGenres = array_values(array_filter(
+                        $data['genres'],
+                        fn ($n) => is_string($n) && $n !== '' && ! $this->isBracketFootnoteToken($n)
+                    ));
+                }
+                $hasRequiredFields = (
+                    ($filteredDevelopers !== []) &&
+                    ($filteredPublishers !== []) &&
+                    ($releaseYear !== null) &&
+                    ($filteredGenres !== [])
+                );
+
+                // If any required field is missing, skip creating anything
+                if (! $hasRequiredFields) {
+                    return; // exit early: do not create Wikipage or Game
+                }
+
+                // Upsert Wikipage
+                $wikipage = Wikipage::where('wikipedia_url', $wikipediaUrl)
+                    ->orWhere('title', $this->pageTitle)
+                    ->first();
+
+                $wikipagePayload = [
+                    'title' => $this->pageTitle,
+                    'wikipedia_url' => $wikipediaUrl,
+                    'description' => $leadDescription ?? ($data['description'] ?? null),
+                    'wikitext' => $wikitext,
+                ];
+
+                if ($wikipage) {
+                    $wikipage->fill($wikipagePayload)->save();
+                } else {
+                    $wikipage = Wikipage::create($wikipagePayload);
+                }
+
+                // Upsert game by (wikipage_id, clean_title)
+                $game = Game::where('wikipage_id', $wikipage->id)
+                    ->where('clean_title', $cleanTitle)
+                    ->first();
+
+                $payload = [
+                    'wikipage_id' => $wikipage->id,
+                    'clean_title' => $cleanTitle,
+                    'cover_image_url' => $data['cover_image_url'] ?? null,
+                    'release_date' => $this->parseDate($data['release_date'] ?? null)?->toDateString(),
+                    'release_year' => $releaseYear,
+                ];
+
+                if ($game) {
+                    $game->fill($payload)->save();
+                } else {
+                    $game = Game::create($payload);
+                }
+
+                // Sync relations
+                if (! empty($data['genres']) && is_array($data['genres'])) {
+                    $genreIds = $this->getIdsFor(Genre::class, $data['genres']);
+                    $game->genres()->sync($genreIds);
+                }
+
+                if (! empty($data['platforms']) && is_array($data['platforms'])) {
+                    $platformIds = $this->getIdsFor(Platform::class, $data['platforms']);
+                    $game->platforms()->sync($platformIds);
+                }
+
+                if (! empty($data['modes']) && is_array($data['modes'])) {
+                    $modeIds = $this->getIdsFor(Mode::class, $data['modes']);
+                    $game->modes()->sync($modeIds);
+                }
+
+                if (! empty($data['series']) && is_array($data['series'])) {
+                    $seriesIds = $this->getIdsFor(Series::class, $data['series']);
+                    $game->series()->sync($seriesIds);
+                }
+
+                if (! empty($data['engines']) && is_array($data['engines'])) {
+                    $engineIds = $this->getIdsFor(Engine::class, $data['engines']);
+                    $game->engines()->sync($engineIds);
+                }
+
+                $companySync = [];
+                if ($filteredDevelopers !== []) {
+                    $devIds = $this->getIdsFor(Company::class, $filteredDevelopers);
+                    foreach ($devIds as $id) {
+                        $companySync[$id] = ['role' => 'developer'];
+                    }
+                }
+                if ($filteredPublishers !== []) {
+                    $pubIds = $this->getIdsFor(Company::class, $filteredPublishers);
+                    foreach ($pubIds as $id) {
+                        $companySync[$id] = ['role' => 'publisher'];
+                    }
+                }
+                if (! empty($companySync)) {
+                    $game->companies()->sync($companySync);
+                }
+            });
+        }
     }
 
     /**

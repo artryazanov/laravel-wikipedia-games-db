@@ -61,61 +61,96 @@ class InfoboxParser
      */
     public function parse(string $html): array
     {
-        $crawler = new Crawler($html);
-        $infobox = $crawler->filter('table.infobox');
+        // Backward-compatible: return the first parsed infobox or empty array
+        $all = $this->parseAll($html);
 
-        if ($infobox->count() === 0) {
+        return $all[0] ?? [];
+    }
+
+    /**
+     * Parse HTML and return an array of parsed infobox datasets (one per infobox table).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function parseAll(string $html): array
+    {
+        $crawler = new Crawler($html);
+        $infoboxes = $crawler->filter('table.infobox');
+
+        if ($infoboxes->count() === 0) {
             return [];
         }
 
-        $data = [];
+        $results = [];
 
-        $infobox->filter('tr')->each(function (Crawler $row) use (&$data) {
-            $header = $row->filter('th');
-            $cell = $row->filter('td');
+        $infoboxes->each(function (Crawler $box) use (&$results) {
+            $data = [];
 
-            if ($header->count() > 0 && $cell->count() > 0) {
-                $key = trim($header->text());
-                if (isset(self::FIELD_MAP[$key])) {
-                    $internalKey = self::FIELD_MAP[$key];
-                    if (in_array($internalKey, ['developers', 'publishers', 'platforms', 'engines', 'genres', 'modes', 'series'], true)) {
-                        $targets = $this->extractAnchorTargets($cell);
-                        $links = $this->extractLinks($cell);
-                        if (! empty($targets)) {
-                            $data[$internalKey] = ! empty($links) ? $links : $targets;
-                            $data[$internalKey.'_link_titles'] = $targets;
-                        } else {
-                            $data[$internalKey] = ! empty($links) ? $links : $this->extractList($cell);
-                        }
-                    } elseif ($internalKey === 'cover_image_url') {
-                        $img = $cell->filter('img');
-                        if ($img->count() > 0) {
-                            $src = $img->attr('src');
-                            if ($src && str_starts_with($src, '//')) {
-                                $src = 'https:'.$src;
-                            }
-                            $data['cover_image_url'] = $src;
-                        }
-                    } else {
-                        $data[$internalKey] = $this->extractDataFromCell($cell, $internalKey);
+            // Try to extract title from the infobox header/caption
+            try {
+                $titleNode = $box->filter('th.infobox-above, th.fn, caption')->first();
+                if ($titleNode->count() > 0) {
+                    $titleText = trim($titleNode->text());
+                    if ($titleText !== '') {
+                        $data['title'] = $this->cleanText($titleText);
                     }
                 }
+            } catch (\Throwable $e) {
+                // ignore, title is optional
+            }
+
+            $box->filter('tr')->each(function (Crawler $row) use (&$data) {
+                $header = $row->filter('th');
+                $cell = $row->filter('td');
+
+                if ($header->count() > 0 && $cell->count() > 0) {
+                    $key = trim($header->text());
+                    if (isset(self::FIELD_MAP[$key])) {
+                        $internalKey = self::FIELD_MAP[$key];
+                        if (in_array($internalKey, ['developers', 'publishers', 'platforms', 'engines', 'genres', 'modes', 'series'], true)) {
+                            $targets = $this->extractAnchorTargets($cell);
+                            $links = $this->extractLinks($cell);
+                            if (! empty($targets)) {
+                                $data[$internalKey] = ! empty($links) ? $links : $targets;
+                                $data[$internalKey.'_link_titles'] = $targets;
+                            } else {
+                                $data[$internalKey] = ! empty($links) ? $links : $this->extractList($cell);
+                            }
+                        } elseif ($internalKey === 'cover_image_url') {
+                            $img = $cell->filter('img');
+                            if ($img->count() > 0) {
+                                $src = $img->attr('src');
+                                if ($src && str_starts_with($src, '//')) {
+                                    $src = 'https:'.$src;
+                                }
+                                $data['cover_image_url'] = $src;
+                            }
+                        } else {
+                            $data[$internalKey] = $this->extractDataFromCell($cell, $internalKey);
+                        }
+                    }
+                }
+            });
+
+            // Some pages place the image in a generic image cell; attempt general image fallback
+            if (! isset($data['cover_image_url'])) {
+                $imageNode = $box->filter('td a.image img')->first();
+                if ($imageNode->count() > 0) {
+                    $src = $imageNode->attr('src');
+                    if ($src && str_starts_with($src, '//')) {
+                        $src = 'https:'.$src;
+                    }
+                    $data['cover_image_url'] = $src;
+                }
+            }
+
+            // Only add if we actually parsed something meaningful
+            if ($data !== []) {
+                $results[] = $data;
             }
         });
 
-        // Some pages place the image in a generic image cell; attempt general image fallback
-        if (! isset($data['cover_image_url'])) {
-            $imageNode = $infobox->filter('td a.image img')->first();
-            if ($imageNode->count() > 0) {
-                $src = $imageNode->attr('src');
-                if ($src && str_starts_with($src, '//')) {
-                    $src = 'https:'.$src;
-                }
-                $data['cover_image_url'] = $src;
-            }
-        }
-
-        return $data;
+        return $results;
     }
 
     /**
