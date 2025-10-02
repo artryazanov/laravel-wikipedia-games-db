@@ -90,7 +90,13 @@ class InfoboxParser
             try {
                 $titleNode = $box->filter('th.infobox-above, th.fn, caption')->first();
                 if ($titleNode->count() > 0) {
-                    $titleText = trim($titleNode->text());
+                    // Prefer first list item text if header contains a list to avoid CSS noise
+                    $li = $titleNode->filter('li')->first();
+                    if ($li->count() > 0) {
+                        $titleText = trim($li->text());
+                    } else {
+                        $titleText = trim($titleNode->text());
+                    }
                     if ($titleText !== '') {
                         $data['title'] = $this->cleanText($titleText);
                     }

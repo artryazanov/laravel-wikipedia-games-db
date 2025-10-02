@@ -132,7 +132,22 @@ class ProcessGamePageJob extends AbstractWikipediaJob
             $gameTitle = is_string($data['title'] ?? null) && $data['title'] !== ''
                 ? $data['title']
                 : $this->pageTitle;
+
+            // Clean and safeguard title for DB (avoid CSS/HTML leakage and length overflow)
             $cleanTitle = $this->makeCleanTitle($gameTitle);
+            if ($cleanTitle === '') {
+                $cleanTitle = $this->makeCleanTitle($this->pageTitle);
+            }
+            if (function_exists('mb_strlen') && function_exists('mb_substr')) {
+                if (mb_strlen($cleanTitle, 'UTF-8') > 255) {
+                    $cleanTitle = mb_substr($cleanTitle, 0, 255, 'UTF-8');
+                }
+            } else {
+                if (strlen($cleanTitle) > 255) {
+                    $cleanTitle = substr($cleanTitle, 0, 255);
+                }
+            }
+
             $releaseYear = $this->extractReleaseYear($data['release_date'] ?? null);
 
             // Dispatch company page jobs for linked developers/publishers
